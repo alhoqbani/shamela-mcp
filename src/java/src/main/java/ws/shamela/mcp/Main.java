@@ -11,12 +11,15 @@ import java.util.Map;
 
 /**
  * Long-lived helper subprocess. Reads JSON commands one per line from stdin,
- * dispatches, writes JSON responses one per line to stdout. Stderr is
- * available for diagnostic logging — the Node side surfaces it through
- * Claude Desktop's logs.
+ * dispatches, writes JSON responses one per line to stdout.
+ *
+ * Java side handles only Lucene reads. SQLite reads (master.db catalog,
+ * per-book printed-page labels) live on the Node side via sql.js, so this
+ * helper does NOT depend on java.sql — Shamela's slim bundled JRE
+ * (java.base, java.management, etc., but no java.sql module) can run it.
  *
  * Invocation:
- *   java -cp <Shamela jars + this jar> ws.shamela.mcp.Main &lt;install_root&gt;
+ *   java -cp &lt;Shamela jars + this jar&gt; ws.shamela.mcp.Main &lt;install_root&gt;
  *
  * Exits cleanly on stdin EOF.
  */
@@ -29,21 +32,14 @@ public final class Main {
         }
         Path installRoot = Paths.get(args[0]);
         Path databaseRoot = installRoot.resolve("database");
-        Path masterDb = databaseRoot.resolve("master.db");
 
-        // Open stdout in unbuffered mode and force UTF-8 to avoid mojibake on Windows.
+        // Force UTF-8 stdout to avoid mojibake on Windows.
         PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
 
         IndexCache indexCache;
-        Catalog catalog;
-        BookPages bookPages;
         try {
             indexCache = new IndexCache(databaseRoot);
-            catalog = new Catalog(masterDb);
-            bookPages = new BookPages(databaseRoot);
         } catch (Exception e) {
-            // Pre-startup failure: emit a single error line and exit so the
-            // Node side surfaces it via the spawn-error path.
             out.println(Json.encode(Json.obj(
                     "id", "startup",
                     "ok", false,
@@ -55,23 +51,20 @@ public final class Main {
             return;
         }
 
-        // Ready signal — useful for diagnostics; Node ignores unknown ids.
-        Map<String, Object> ready = Json.obj(
+        // Ready signal — Node ignores unknown ids; useful for diagnostics.
+        out.println(Json.encode(Json.obj(
                 "id", "ready",
                 "ok", true,
                 "data", Json.obj(
                         "java_version", System.getProperty("java.version"),
-                        "books_indexed", catalog.bookCount(),
-                        "authors_indexed", catalog.authorCount(),
                         "page_docs", safeNumDocs(indexCache, "page"))
-        );
-        out.println(Json.encode(ready));
+        )));
 
         try (BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
             String line;
             while ((line = in.readLine()) != null) {
                 if (line.isEmpty()) continue;
-                Map<String, Object> response = dispatch(line, indexCache, catalog, bookPages);
+                Map<String, Object> response = dispatch(line, indexCache);
                 out.println(Json.encode(response));
                 out.flush();
             }
@@ -79,7 +72,6 @@ public final class Main {
             System.err.println("[helper] fatal: " + e);
         } finally {
             indexCache.close();
-            bookPages.close();
         }
     }
 
@@ -88,12 +80,7 @@ public final class Main {
     }
 
     @SuppressWarnings("unchecked")
-    static Map<String, Object> dispatch(
-            String line,
-            IndexCache indexCache,
-            Catalog catalog,
-            BookPages bookPages
-    ) {
+    static Map<String, Object> dispatch(String line, IndexCache indexCache) {
         Map<String, Object> req;
         try {
             req = Json.decodeObject(line);
@@ -109,18 +96,18 @@ public final class Main {
                 case "ping" -> Json.obj(
                         "pong", Boolean.TRUE,
                         "java_version", System.getProperty("java.version"),
-                        "books_indexed", catalog.bookCount(),
-                        "authors_indexed", catalog.authorCount(),
-                        "page_docs", safeNumDocs(indexCache, "page")
+                        "page_docs", safeNumDocs(indexCache, "page"),
+                        "book_docs", safeNumDocs(indexCache, "book"),
+                        "author_docs", safeNumDocs(indexCache, "author")
                 );
                 case "search_pages" -> SearchPages.run(
-                        indexCache, catalog, bookPages,
+                        indexCache,
                         asString(args.get("query")), asInt(args.get("max_results"), 20));
                 case "search_books" -> SearchBooks.run(
-                        indexCache, catalog,
+                        indexCache,
                         asString(args.get("query")), asInt(args.get("max_results"), 20));
                 case "search_authors" -> SearchAuthors.run(
-                        indexCache, catalog,
+                        indexCache,
                         asString(args.get("query")), asInt(args.get("max_results"), 20));
                 default -> throw new IllegalArgumentException("unknown command: " + cmd);
             };

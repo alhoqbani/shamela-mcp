@@ -17,13 +17,11 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
-import ws.shamela.mcp.Catalog.BookInfo;
-
 /**
  * shamela_search_books — match Arabic tokens against the pre-built `book`
  * index's `body` field (concatenation of book name + author names +
- * bibliography). Snippets are sliced from `body_store` (the bibliography text
- * stored separately).
+ * bibliography). Snippets sourced from `body_store` (the bibliography text
+ * stored separately). Returns minimal hits; Node fills in display names.
  */
 public final class SearchBooks {
 
@@ -33,7 +31,6 @@ public final class SearchBooks {
 
     public static Map<String, Object> run(
             IndexCache indexCache,
-            Catalog catalog,
             String rawQuery,
             int maxResults
     ) throws IOException {
@@ -75,17 +72,10 @@ public final class SearchBooks {
             }
 
             String biblio = nullToEmpty(doc.get("body_store"));
-            BookInfo info = catalog.bookOrPlaceholder(bookId);
-
-            // Build snippet source: prefer biblio if non-empty (it's the richer field);
-            // otherwise fall back to the indexed body which contains name + authors.
-            String snippetSource = !biblio.isEmpty() ? biblio : (info.bookName() + (info.authorName() != null ? " " + info.authorName() : ""));
-            String snippet = Snippet.make(snippetSource, tokens);
+            String snippet = !biblio.isEmpty() ? Snippet.make(biblio, tokens) : "";
 
             Map<String, Object> hit = new LinkedHashMap<>();
             hit.put("book_id", bookId);
-            hit.put("book_name", info.bookName());
-            hit.put("author_name", info.authorName());
             hit.put("snippet", snippet);
             results.add(hit);
         }

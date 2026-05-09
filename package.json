@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build:server": "esbuild src/server/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/index.js --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\"",
+    "build:server": "esbuild src/server/index.ts --bundle --platform=node --target=node20 --format=esm --loader:.wasm=binary --outfile=dist/index.js --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\"",
     "build:java": "powershell -ExecutionPolicy Bypass -File scripts/build-java.ps1",
     "build": "npm run build:server && npm run build:java",
     "smoke": "tsx tests/smoke.ts",
@@ -17,10 +17,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.0",
+    "sql.js": "^1.14.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^20.19.0",
+    "@types/sql.js": "^1.4.11",
     "esbuild": "^0.24.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"

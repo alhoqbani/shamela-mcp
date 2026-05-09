@@ -15,43 +15,18 @@
  */
 
 import * as fs from "node:fs";
+import { createRequire } from "node:module";
 import * as path from "node:path";
 
+const require = createRequire(import.meta.url);
+
+import { Catalog } from "../src/server/catalog.js";
 import { Helper } from "../src/server/helper.js";
+import { PageStore } from "../src/server/pages.js";
 import { resolveAll, ShamelaNotFoundError } from "../src/server/paths.js";
-
-interface PagesEnvelope {
-    total_hits: number;
-    returned: number;
-    query: string;
-    normalized_tokens: string[];
-    results: Array<{
-        book_id: number;
-        book_name: string;
-        author_name: string | null;
-        page_id: number;
-        printed_page: string | null;
-        matched_in: string[];
-        snippet_body: string;
-        snippet_foot: string;
-    }>;
-}
-
-interface BooksEnvelope {
-    total_hits: number;
-    returned: number;
-    query: string;
-    normalized_tokens: string[];
-    results: Array<{ book_id: number; book_name: string; author_name: string | null; snippet: string }>;
-}
-
-interface AuthorsEnvelope {
-    total_hits: number;
-    returned: number;
-    query: string;
-    normalized_tokens: string[];
-    results: Array<{ author_id: number; author_name: string; death_year: number | null; snippet: string }>;
-}
+import { searchAuthors } from "../src/server/tools/searchAuthors.js";
+import { searchBooks } from "../src/server/tools/searchBooks.js";
+import { searchPages } from "../src/server/tools/searchPages.js";
 
 function fmt(label: string, value: string): string {
     return `${label.padEnd(15)}${value}`;
@@ -93,7 +68,15 @@ async function main(): Promise<number> {
         return 1;
     }
 
+    // In dev mode (tsx) we read sql.js's WASM from node_modules; in production
+    // it is inlined into dist/index.js by esbuild's binary loader.
+    const sqlWasmPath = require.resolve("sql.js/dist/sql-wasm.wasm");
+    const sqlWasm = new Uint8Array(fs.readFileSync(sqlWasmPath));
+
     const helper = new Helper({ paths });
+    const catalog = await Catalog.load(path.join(paths.database, "master.db"), sqlWasm);
+    const pageStore = new PageStore(paths.database, sqlWasm);
+    console.log(fmt("catalog:", `${catalog.bookCount()} books, ${catalog.authorCount()} authors`));
     const failures: string[] = [];
 
     try {
@@ -107,7 +90,7 @@ async function main(): Promise<number> {
             { query: "الكلام لغة", expected: 3 },
         ];
         for (const tc of pageCases) {
-            const r = await helper.request<PagesEnvelope>("search_pages", { query: tc.query, max_results: 20 });
+            const r = await searchPages(helper, catalog, pageStore, { query: tc.query, max_results: 20 });
             const ok = r.total_hits === tc.expected;
             console.log(
                 `[${ok ? "OK" : "FAIL"}] search_pages query=${JSON.stringify(tc.query)} ` +
@@ -125,10 +108,7 @@ async function main(): Promise<number> {
             if (!ok) failures.push(`search_pages "${tc.query}": got ${r.total_hits}, expected ${tc.expected}`);
         }
 
-        // Loose checks — bookshelf and author indexes ship pre-built so any
-        // common term should hit. We don't assert exact counts since we don't
-        // have a curated baseline.
-        const booksResult = await helper.request<BooksEnvelope>("search_books", { query: "علم", max_results: 5 });
+        const booksResult = await searchBooks(helper, catalog, { query: "علم", max_results: 5 });
         const booksOk = booksResult.total_hits >= 1;
         console.log(
             `[${booksOk ? "OK" : "FAIL"}] search_books query="علم" total_hits=${booksResult.total_hits} returned=${booksResult.returned}`,
@@ -139,7 +119,7 @@ async function main(): Promise<number> {
         }
         if (!booksOk) failures.push(`search_books "علم": got ${booksResult.total_hits}, expected >= 1`);
 
-        const authorsResult = await helper.request<AuthorsEnvelope>("search_authors", { query: "ابن", max_results: 5 });
+        const authorsResult = await searchAuthors(helper, catalog, { query: "ابن", max_results: 5 });
         const authorsOk = authorsResult.total_hits >= 1;
         console.log(
             `[${authorsOk ? "OK" : "FAIL"}] search_authors query="ابن" total_hits=${authorsResult.total_hits} returned=${authorsResult.returned}`,
@@ -155,6 +135,7 @@ async function main(): Promise<number> {
         failures.push(`uncaught: ${(err as Error).message}`);
     } finally {
         await helper.close();
+        pageStore.close();
     }
 
     console.log();

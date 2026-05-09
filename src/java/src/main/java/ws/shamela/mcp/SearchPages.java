@@ -17,11 +17,14 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
-import ws.shamela.mcp.Catalog.BookInfo;
-
 /**
  * shamela_search_pages — multi-token AND across body+foot fields of the
  * page index, with Arabic normalization applied to each query token.
+ *
+ * Returns minimal hits (book_id, page_id, snippets, matched_in). The Node
+ * side enriches with book/author names (from master.db) and printed-page
+ * labels (from per-book SQLite). This keeps the Java helper free of any
+ * SQLite/JDBC dependency, so Shamela's slim bundled JRE (no java.sql) works.
  */
 public final class SearchPages {
 
@@ -31,8 +34,6 @@ public final class SearchPages {
 
     public static Map<String, Object> run(
             IndexCache indexCache,
-            Catalog catalog,
-            BookPages bookPages,
             String rawQuery,
             int maxResults
     ) throws IOException {
@@ -86,15 +87,9 @@ public final class SearchPages {
                 snippetFoot = Snippet.make(foot, tokens);
             }
 
-            BookInfo info = catalog.bookOrPlaceholder(bookId);
-            String printed = bookPages.printedPage(bookId, pageId);
-
             Map<String, Object> hit = new LinkedHashMap<>();
             hit.put("book_id", bookId);
-            hit.put("book_name", info.bookName());
-            hit.put("author_name", info.authorName());
             hit.put("page_id", pageId);
-            hit.put("printed_page", printed);
             hit.put("matched_in", matchedIn);
             hit.put("snippet_body", snippetBody);
             hit.put("snippet_foot", snippetFoot);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { Catalog } from "../catalog.js";
 import type { Helper } from "../helper.js";
 
 export const searchAuthorsInput = {
@@ -12,6 +13,19 @@ export const searchAuthorsInput = {
         .default(20)
         .describe("Maximum number of hits to return (1-100, default 20)."),
 };
+
+interface RawHit {
+    author_id: number;
+    snippet: string;
+}
+
+interface RawEnvelope {
+    total_hits: number;
+    returned: number;
+    query: string;
+    normalized_tokens: string[];
+    results: RawHit[];
+}
 
 export interface SearchAuthorHit {
     author_id: number;
@@ -30,7 +44,24 @@ export interface SearchAuthorsOutput {
 
 export async function searchAuthors(
     helper: Helper,
+    catalog: Catalog,
     args: { query: string; max_results: number },
 ): Promise<SearchAuthorsOutput> {
-    return helper.request<SearchAuthorsOutput>("search_authors", args);
+    const raw = await helper.request<RawEnvelope>("search_authors", args);
+    const enriched: SearchAuthorHit[] = raw.results.map((hit) => {
+        const author = catalog.author(hit.author_id);
+        return {
+            author_id: hit.author_id,
+            author_name: author.author_name,
+            death_year: author.death_year,
+            snippet: hit.snippet,
+        };
+    });
+    return {
+        total_hits: raw.total_hits,
+        returned: raw.returned,
+        query: raw.query,
+        normalized_tokens: raw.normalized_tokens,
+        results: enriched,
+    };
 }

@@ -17,11 +17,10 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
-import ws.shamela.mcp.Catalog.AuthorInfo;
-
 /**
  * shamela_search_authors — match Arabic tokens against the pre-built `author`
  * index's `body` field (author name + biography). Snippets from `body_store`.
+ * Returns minimal hits; Node fills in display names + Hijri death years.
  */
 public final class SearchAuthors {
 
@@ -31,7 +30,6 @@ public final class SearchAuthors {
 
     public static Map<String, Object> run(
             IndexCache indexCache,
-            Catalog catalog,
             String rawQuery,
             int maxResults
     ) throws IOException {
@@ -73,14 +71,10 @@ public final class SearchAuthors {
             }
 
             String biography = nullToEmpty(doc.get("body_store"));
-            AuthorInfo info = catalog.authorOrPlaceholder(authorId);
-            String source = !biography.isEmpty() ? biography : info.authorName();
-            String snippet = Snippet.make(source, tokens);
+            String snippet = !biography.isEmpty() ? Snippet.make(biography, tokens) : "";
 
             Map<String, Object> hit = new LinkedHashMap<>();
             hit.put("author_id", authorId);
-            hit.put("author_name", info.authorName());
-            hit.put("death_year", info.deathYear());
             hit.put("snippet", snippet);
             results.add(hit);
         }

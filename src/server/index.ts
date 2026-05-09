@@ -10,12 +10,17 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
+import { Catalog } from "./catalog.js";
 import { Helper, HelperError } from "./helper.js";
+import { PageStore } from "./pages.js";
 import { resolveAll, ShamelaNotFoundError } from "./paths.js";
 import { searchAuthors, searchAuthorsInput } from "./tools/searchAuthors.js";
 import { searchBooks, searchBooksInput } from "./tools/searchBooks.js";
 import { searchPages, searchPagesInput } from "./tools/searchPages.js";
+// @ts-expect-error — esbuild `--loader:.wasm=binary` inlines this as a Uint8Array.
+import sqlWasm from "sql.js/dist/sql-wasm.wasm";
 
+const SQL_WASM_BINARY: Uint8Array = sqlWasm as unknown as Uint8Array;
 const VERSION = "0.0.1";
 
 function logInfo(msg: string): void {
@@ -29,20 +34,32 @@ function formatError(err: unknown): string {
     return String(err);
 }
 
-async function main(): Promise<void> {
-    let helper: Helper | null = null;
+interface Backend {
+    helper: Helper;
+    catalog: Catalog;
+    pages: PageStore;
+}
 
-    const getHelper = async (): Promise<Helper> => {
-        if (helper) return helper;
+async function main(): Promise<void> {
+    let backend: Backend | null = null;
+
+    const getBackend = async (): Promise<Backend> => {
+        if (backend) return backend;
         const paths = await resolveAll();
         logInfo(`install root: ${paths.installRoot}`);
         logInfo(`jre:          ${paths.jre}`);
         logInfo(`jars:         ${paths.jars.length} files`);
         logInfo(`helper jar:   ${paths.helperJar}`);
+
+        const masterDb = (await import("node:path")).join(paths.database, "master.db");
+        const catalog = await Catalog.load(masterDb, SQL_WASM_BINARY);
+        logInfo(`catalog:      ${catalog.bookCount()} books, ${catalog.authorCount()} authors`);
+        const pages = new PageStore(paths.database, SQL_WASM_BINARY);
+
         const h = new Helper({ paths });
         await h.ready(20_000);
-        helper = h;
-        return h;
+        backend = { helper: h, catalog, pages };
+        return backend;
     };
 
     const server = new McpServer(
@@ -56,8 +73,8 @@ async function main(): Promise<void> {
         searchPagesInput,
         async (args, _extra) => {
             try {
-                const h = await getHelper();
-                const result = await searchPages(h, args as { query: string; max_results: number });
+                const b = await getBackend();
+                const result = await searchPages(b.helper, b.catalog, b.pages, args as { query: string; max_results: number });
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
                 };
@@ -76,8 +93,8 @@ async function main(): Promise<void> {
         searchBooksInput,
         async (args, _extra) => {
             try {
-                const h = await getHelper();
-                const result = await searchBooks(h, args as { query: string; max_results: number });
+                const b = await getBackend();
+                const result = await searchBooks(b.helper, b.catalog, args as { query: string; max_results: number });
                 return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
             } catch (err) {
                 return { isError: true, content: [{ type: "text", text: formatError(err) }] };
@@ -91,8 +108,8 @@ async function main(): Promise<void> {
         searchAuthorsInput,
         async (args, _extra) => {
             try {
-                const h = await getHelper();
-                const result = await searchAuthors(h, args as { query: string; max_results: number });
+                const b = await getBackend();
+                const result = await searchAuthors(b.helper, b.catalog, args as { query: string; max_results: number });
                 return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
             } catch (err) {
                 return { isError: true, content: [{ type: "text", text: formatError(err) }] };
@@ -105,9 +122,12 @@ async function main(): Promise<void> {
     logInfo(`shamela-mcp v${VERSION} ready`);
 
     // Clean shutdown on stdio close.
-    process.on("SIGTERM", () => helper?.close());
-    process.on("SIGINT", () => helper?.close());
-    // Quiet zod unused-import warning if z is not used elsewhere.
+    const shutdown = () => {
+        backend?.helper.close();
+        backend?.pages.close();
+    };
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
     void z;
 }
 

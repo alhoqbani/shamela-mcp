@@ -64,21 +64,12 @@ $shamela = Find-ShamelaInstall
 $luceneDir = Join-Path $shamela "app\lucene\2"
 Write-Host "Shamela: $shamela"
 
-# sqlite-jdbc cache
-$sqliteVersion = "3.47.0.0"
-$libsCache = Join-Path $repoRoot "libs-cache"
-$sqliteJar = Join-Path $libsCache "sqlite-jdbc-$sqliteVersion.jar"
-if (-not (Test-Path $sqliteJar)) {
-    New-Item -ItemType Directory -Force -Path $libsCache | Out-Null
-    $url = "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/$sqliteVersion/sqlite-jdbc-$sqliteVersion.jar"
-    Write-Host "Downloading sqlite-jdbc $sqliteVersion ..."
-    Invoke-WebRequest -Uri $url -OutFile $sqliteJar -UseBasicParsing
-}
-
-# Build classpath: Shamela's Lucene jars + sqlite-jdbc.
+# Build classpath: Shamela's Lucene jars only. SQLite is handled on the
+# Node side (sql.js) so we don't need sqlite-jdbc here, which keeps the
+# helper jar tiny and removes any java.sql dependency. Important: Shamela's
+# bundled JRE is a slim build that doesn't include the java.sql module.
 $cpJars = @()
 $cpJars += Get-ChildItem -Path $luceneDir -Filter "*.jar" | ForEach-Object { $_.FullName }
-$cpJars += $sqliteJar
 $classpath = $cpJars -join ";"
 
 # Source files
@@ -98,18 +89,8 @@ Write-Host "Compiling $($javaFiles.Count) Java sources..."
 & javac -encoding UTF-8 -source 21 -target 21 -d $classesDir -cp $classpath $javaFiles
 if ($LASTEXITCODE -ne 0) { throw "javac failed (exit $LASTEXITCODE)" }
 
-# Build a fat jar: extract sqlite-jdbc into mergedDir, then copy our classes on top.
-Write-Host "Bundling sqlite-jdbc into helper jar..."
-Push-Location $mergedDir
-try {
-    & jar -xf $sqliteJar
-    if ($LASTEXITCODE -ne 0) { throw "jar -xf sqlite-jdbc failed" }
-} finally { Pop-Location }
-
-# Drop sqlite-jdbc's META-INF (signed-jar headers; harmless to remove for our merged jar).
-Remove-Item -Recurse -Force (Join-Path $mergedDir "META-INF") -ErrorAction SilentlyContinue
-
-# Copy our compiled classes on top.
+# Helper jar contains only our compiled classes (no third-party deps; Lucene
+# comes from the user's Shamela install at runtime).
 Copy-Item -Recurse -Force (Join-Path $classesDir "*") $mergedDir
 
 # Write a manifest naming Main as the entry point.
