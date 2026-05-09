@@ -15,7 +15,6 @@
 
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
-import { glob } from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -242,15 +241,15 @@ function resolveJre(installRoot: string): string {
     );
 }
 
-async function resolveJars(installRoot: string): Promise<string[]> {
+function resolveJars(installRoot: string): string[] {
     const luceneDir = path.join(installRoot, "app", "lucene", "2");
     if (!fs.existsSync(luceneDir)) {
         throw new Error(`Lucene jar directory missing: ${luceneDir}`);
     }
-    const out: string[] = [];
-    for await (const entry of glob("*.jar", { cwd: luceneDir })) {
-        out.push(path.join(luceneDir, entry));
-    }
+    const out = fs
+        .readdirSync(luceneDir)
+        .filter((name) => name.toLowerCase().endsWith(".jar"))
+        .map((name) => path.join(luceneDir, name));
     if (out.length === 0) {
         throw new Error(`No .jar files found in ${luceneDir}.`);
     }
@@ -284,7 +283,7 @@ export async function resolveAll(): Promise<ShamelaPaths> {
     const { installRoot } = findInstallRoot();
     const database = path.join(installRoot, "database");
     const jre = resolveJre(installRoot);
-    const jars = await resolveJars(installRoot);
+    const jars = resolveJars(installRoot);
     const helperJar = resolveHelperJar();
     return { installRoot, database, jre, jars, helperJar };
 }
