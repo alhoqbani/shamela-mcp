@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Lazy-open per-book SQLite databases for printed-page label lookups.
@@ -47,8 +48,10 @@ public final class BookPages {
         Path p = pathFor(bookId);
         if (!Files.isRegularFile(p)) return null;
         try {
-            String url = "jdbc:sqlite:" + p.toString().replace("\\", "/") + "?mode=ro";
-            Connection conn = DriverManager.getConnection(url);
+            String url = "jdbc:sqlite:" + p.toString().replace("\\", "/");
+            Properties props = new Properties();
+            props.setProperty("open_mode", "1"); // SQLITE_OPEN_READONLY
+            Connection conn = DriverManager.getConnection(url, props);
             connections.put(bookId, conn);
             if (connections.size() > MAX_CACHE) {
                 Map.Entry<Integer, Connection> oldest = connections.entrySet().iterator().next();

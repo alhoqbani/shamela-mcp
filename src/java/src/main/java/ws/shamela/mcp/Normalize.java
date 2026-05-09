@@ -60,7 +60,13 @@ public final class Normalize {
                     break;
             }
         }
-        return sb.toString().trim();
+        String result = sb.toString().trim();
+        // Synonym applied by Shamela's CustomAnalyzer when hamza is off:
+        // a whole token of "ابن" becomes "بن". After our alef fold above,
+        // {ٱ,آ,أ,إ}بن all already collapse to "ابن", so the rule reduces to a
+        // single equality check.
+        if ("ابن".equals(result)) return "بن";
+        return result;
     }
 
     /** Split, normalize, and drop empty tokens. Caps at MAX_TOKENS. */

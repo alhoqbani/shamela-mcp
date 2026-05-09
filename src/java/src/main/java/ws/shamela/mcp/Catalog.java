@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * In-memory cache of master.db: book_id -> (book_name, author_name).
@@ -23,14 +24,17 @@ public final class Catalog {
     private final Map<Integer, AuthorInfo> authors = new HashMap<>();
 
     public Catalog(Path masterDb) throws SQLException {
-        String url = "jdbc:sqlite:" + masterDb.toString().replace("\\", "/") + "?mode=ro";
         // Force load of the SQLite JDBC driver for systems without auto-discovery.
         try {
             Class.forName("org.sqlite.JDBC");
         } catch (ClassNotFoundException e) {
             throw new SQLException("sqlite-jdbc not on the classpath", e);
         }
-        try (Connection conn = DriverManager.getConnection(url);
+        String url = "jdbc:sqlite:" + masterDb.toString().replace("\\", "/");
+        Properties props = new Properties();
+        // SQLITE_OPEN_READONLY = 1; sqlite-jdbc maps "open_mode" to sqlite3_open_v2 flags.
+        props.setProperty("open_mode", "1");
+        try (Connection conn = DriverManager.getConnection(url, props);
              Statement st = conn.createStatement()) {
 
             // Load authors first.

@@ -72,7 +72,15 @@ export class Helper extends EventEmitter {
         const promise = new Promise<void>((resolve, reject) => {
             const { paths } = this.config;
             const classpath = [...paths.jars, paths.helperJar].join(path.delimiter);
+            // Java 21 + Lucene 10.4 wants these to silence two startup warnings
+            // and enable SIMD vector acceleration. Both are no-ops without effect
+            // on correctness.
+            const defaultJvmArgs = [
+                "--enable-native-access=ALL-UNNAMED",
+                "--add-modules=jdk.incubator.vector",
+            ];
             const args = [
+                ...defaultJvmArgs,
                 ...(this.config.jvmArgs ?? []),
                 "-cp",
                 classpath,

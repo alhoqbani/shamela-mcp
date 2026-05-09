@@ -12,7 +12,8 @@ import java.util.Map;
  * Only encodes/decodes the shapes our protocol uses:
  *   - encode: Map, List, String, Number, Boolean, null, nested.
  *   - decode: object/array/string/number/boolean/null with standard JSON
- *     escapes. No exotic Unicode escape edge cases beyond \uXXXX.
+ *     escapes. No exotic Unicode escape edge cases beyond the basic
+ *     four-hex-digit form.
  *
  * Throws JsonException on parse failure.
  */
