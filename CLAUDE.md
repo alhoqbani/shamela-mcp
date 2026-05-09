@@ -2,12 +2,6 @@
 
 This repo packages a Maktabah al-Shamela 4 search server as an `.mcpb` (MCP Bundle) for one-double-click install into Claude Desktop. It is **code-only** by design — no findings, no spec, no rationale lives here.
 
-For architectural rationale (why subprocess vs `java-bridge`, IPC protocol details, the Lucene/AlKhalil constraints), read:
-
-- `C:\Users\halhoqbani\Downloads\shamela-mcp\docs\architecture.md` — the source-of-record decision doc.
-- `C:\Users\halhoqbani\Downloads\shamela-mcp\findings\search-engine-spec.md` — the clean-room behavioral spec of Shamela's search engine.
-- `C:\Users\halhoqbani\Downloads\shamela-mcp\shamela_mcp\` — the working Python+JPype prototype this MCPB replaces. Read `search.py` and `normalize.py` for empirically-validated behavior.
-
 ## Build commands
 
 ```powershell
