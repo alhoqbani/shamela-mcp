@@ -2,7 +2,20 @@
   "name": "shamela-mcpb",
   "version": "1.0.0",
   "description": "MCPB (MCP Bundle) for searching and studying a local Maktabah al-Shamela 4 install from Claude Desktop. 20 read-only tools.",
-  "author": "فاعل خير",
+  "author": {
+    "name": "h.alhoqbani",
+    "email": "h.alhoqbani@gmail.com",
+    "url": "https://github.com/alhoqbani"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alhoqbani/shamela-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alhoqbani/shamela-mcp/issues"
+  },
+  "homepage": "https://github.com/alhoqbani/shamela-mcp#readme",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
