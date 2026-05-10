@@ -6,8 +6,12 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.lucene.analysis.Analyzer;
 
 /**
  * Long-lived helper subprocess. Reads JSON commands one per line from stdin,
@@ -79,6 +83,67 @@ public final class Main {
         try { return c.numDocs(name); } catch (Exception e) { return -1; }
     }
 
+    /** Lazy holder for ws.shamela.MorphologyAnalyzer (no-arg constructor). */
+    private static volatile Analyzer morphologyAnalyzer = null;
+    private static synchronized Analyzer morphologyAnalyzer() {
+        if (morphologyAnalyzer != null) return morphologyAnalyzer;
+        try {
+            Class<?> cls = Class.forName("ws.shamela.MorphologyAnalyzer");
+            morphologyAnalyzer = (Analyzer) cls.getDeclaredConstructor().newInstance();
+            return morphologyAnalyzer;
+        } catch (Throwable t) {
+            throw new IllegalStateException(
+                "MorphologyAnalyzer unavailable: " + t.getClass().getSimpleName() + ": " + t.getMessage(), t);
+        }
+    }
+
+    private static void rejectPreservation(Map<String, Object> options) {
+        if (options == null) return;
+        for (String k : List.of("preserve_diacritics", "preserve_hamza", "preserve_digits")) {
+            Object v = options.get(k);
+            if (v instanceof Boolean b && b) {
+                throw new IllegalStateException(
+                    "OPTION_NOT_SUPPORTED:" + k + ":Option '" + k + "' is not supported in v1.0.");
+            }
+        }
+    }
+
+    private static void requireNoConflict(Map<String, Object> options) {
+        if (options == null) return;
+        boolean morph = boolFlag(options, "morphology");
+        boolean wild = boolFlag(options, "wildcards");
+        if (morph && wild) {
+            throw new IllegalStateException(
+                "OPTION_CONFLICT::morphology and wildcards cannot be combined.");
+        }
+    }
+
+    private static boolean boolFlag(Map<String, Object> options, String key) {
+        Object v = options == null ? null : options.get(key);
+        return v instanceof Boolean ? (Boolean) v : false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> asStringList(Object o) {
+        if (!(o instanceof List<?> list)) return null;
+        List<String> out = new ArrayList<>(list.size());
+        for (Object e : list) if (e != null) out.add(String.valueOf(e));
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Integer> asIntList(Object o) {
+        if (!(o instanceof List<?> list)) return null;
+        List<Integer> out = new ArrayList<>(list.size());
+        for (Object e : list) {
+            if (e instanceof Number n) out.add(n.intValue());
+            else if (e instanceof String s) {
+                try { out.add(Integer.parseInt(s.trim())); } catch (NumberFormatException ignore) {}
+            }
+        }
+        return out;
+    }
+
     @SuppressWarnings("unchecked")
     static Map<String, Object> dispatch(String line, IndexCache indexCache) {
         Map<String, Object> req;
@@ -100,6 +165,7 @@ public final class Main {
                         "book_docs", safeNumDocs(indexCache, "book"),
                         "author_docs", safeNumDocs(indexCache, "author")
                 );
+                // v0.0.1 commands (preserved)
                 case "search_pages" -> SearchPages.run(
                         indexCache,
                         asString(args.get("query")), asInt(args.get("max_results"), 20));
@@ -109,6 +175,84 @@ public final class Main {
                 case "search_authors" -> SearchAuthors.run(
                         indexCache,
                         asString(args.get("query")), asInt(args.get("max_results"), 20));
+                // v1.0 commands
+                case "search_pages_v2" -> {
+                    Map<String, Object> opts = (Map<String, Object>) args.getOrDefault("options", new LinkedHashMap<>());
+                    rejectPreservation(opts);
+                    requireNoConflict(opts);
+                    yield SearchPagesV2.run(
+                            indexCache,
+                            boolFlag(opts, "morphology") ? morphologyAnalyzer() : null,
+                            asString(args.get("query")),
+                            asStringList(args.get("scope_book_keys")),
+                            asInt(args.get("max_results"), 20),
+                            asInt(args.get("offset"), 0),
+                            boolFlag(opts, "morphology"),
+                            boolFlag(opts, "wildcards"),
+                            asStringList(opts.get("search_in")));
+                }
+                case "search_titles" -> {
+                    Map<String, Object> opts = (Map<String, Object>) args.getOrDefault("options", new LinkedHashMap<>());
+                    rejectPreservation(opts);
+                    requireNoConflict(opts);
+                    yield SearchTitles.run(
+                            indexCache,
+                            boolFlag(opts, "morphology") ? morphologyAnalyzer() : null,
+                            asString(args.get("query")),
+                            asStringList(args.get("scope_book_keys")),
+                            asInt(args.get("max_results"), 20),
+                            asInt(args.get("offset"), 0),
+                            boolFlag(opts, "morphology"),
+                            boolFlag(opts, "wildcards"));
+                }
+                case "search_books_v2" -> {
+                    Map<String, Object> opts = (Map<String, Object>) args.getOrDefault("options", new LinkedHashMap<>());
+                    rejectPreservation(opts);
+                    requireNoConflict(opts);
+                    yield SearchBooksV2.run(
+                            indexCache,
+                            boolFlag(opts, "morphology") ? morphologyAnalyzer() : null,
+                            asString(args.get("query")),
+                            asStringList(args.get("scope_book_keys")),
+                            asInt(args.get("max_results"), 20),
+                            asInt(args.get("offset"), 0),
+                            boolFlag(opts, "morphology"),
+                            boolFlag(opts, "wildcards"));
+                }
+                case "search_authors_v2" -> {
+                    Map<String, Object> opts = (Map<String, Object>) args.getOrDefault("options", new LinkedHashMap<>());
+                    rejectPreservation(opts);
+                    requireNoConflict(opts);
+                    yield SearchAuthorsV2.run(
+                            indexCache,
+                            boolFlag(opts, "morphology") ? morphologyAnalyzer() : null,
+                            asString(args.get("query")),
+                            asInt(args.get("max_results"), 20),
+                            asInt(args.get("offset"), 0),
+                            boolFlag(opts, "morphology"),
+                            boolFlag(opts, "wildcards"));
+                }
+                case "search_quran" -> SearchQuran.run(
+                        indexCache,
+                        asString(args.get("query")),
+                        asInt(args.get("max_results"), 20),
+                        asInt(args.get("offset"), 0),
+                        boolFlag(args.get("options") instanceof Map<?,?> m
+                                ? (Map<String,Object>) m : new LinkedHashMap<>(), "wildcards"));
+                case "get_aya" -> GetAya.run(indexCache, asInt(args.get("aya_id"), 0));
+                case "resolve" -> Resolve.run(
+                        indexCache,
+                        asString(args.get("query")),
+                        asString(args.get("type")),
+                        asInt(args.get("limit"), 5));
+                case "get_pages_batch" -> GetPagesBatch.run(
+                        indexCache,
+                        asInt(args.get("book_id"), 0),
+                        asIntList(args.get("page_ids")));
+                case "get_titles_batch" -> GetTitlesBatch.run(
+                        indexCache,
+                        asInt(args.get("book_id"), 0),
+                        asIntList(args.get("title_ids")));
                 default -> throw new IllegalArgumentException("unknown command: " + cmd);
             };
             Map<String, Object> resp = new LinkedHashMap<>();
@@ -116,6 +260,18 @@ public final class Main {
             resp.put("ok", Boolean.TRUE);
             resp.put("data", data);
             return resp;
+        } catch (IllegalStateException e) {
+            // Used by rejectPreservation / requireNoConflict to signal mapped error codes.
+            String msg = e.getMessage() == null ? "" : e.getMessage();
+            if (msg.startsWith("OPTION_NOT_SUPPORTED:")) {
+                String[] parts = msg.split(":", 3);
+                return error(id, "OPTION_NOT_SUPPORTED", parts.length >= 3 ? parts[2] : msg);
+            }
+            if (msg.startsWith("OPTION_CONFLICT:")) {
+                String[] parts = msg.split(":", 3);
+                return error(id, "OPTION_CONFLICT", parts.length >= 3 ? parts[2] : msg);
+            }
+            return error(id, "INTERNAL", msg);
         } catch (IllegalArgumentException e) {
             return error(id, "BAD_ARG", e.getMessage());
         } catch (Exception e) {
