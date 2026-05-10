@@ -24,17 +24,10 @@ explicitly if your JDK is in a non-standard location.
 
 ## Release workflow
 
-Releases publish a `.mcpb` to GitHub Releases on this repo
-(`alhoqbani/shamela-mcp`). The flow is **manual on the developer machine** —
-CI can't build the helper jar without the user's Shamela install (which we
-can't ship for clean-room reasons).
-
-**Two repos, one release surface:**
-- This repo (`alhoqbani/shamela-mcp`) is the **public** release surface —
-  source code + `.mcpb` releases.
-- The companion private repo `alhoqbani/shamela-mcp-source` holds
-  reverse-engineering research, decompiled `.py`, snapshots — never
-  shipped, never published.
+Releases publish a `.mcpb` to GitHub Releases on this repo. The flow is
+**manual on the developer machine** — CI can't build the helper jar
+without the user's Shamela install (which we can't ship for clean-room
+reasons).
 
 ### When the user says "ship a release" / "cut a release" / "publish"
 
