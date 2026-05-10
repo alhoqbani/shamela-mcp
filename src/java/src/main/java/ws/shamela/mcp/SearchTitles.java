@@ -63,12 +63,6 @@ public final class SearchTitles {
         int seen = 0;
         for (ScoreDoc sd : top.scoreDocs) {
             Document doc = stored.document(sd.doc);
-            String bookKey = doc.get("book_key");
-            if (bookKey != null) coverage.recordBookKey(bookKey);
-
-            if (seen++ < safeOffset) continue;
-            if (results.size() >= safeMax) continue;
-
             String idField = doc.get("id");
             if (idField == null) continue;
             int dash = idField.indexOf('-');
@@ -80,6 +74,11 @@ public final class SearchTitles {
             } catch (NumberFormatException e) {
                 continue;
             }
+            // book_key is indexed but not stored — derive it from id.
+            coverage.recordBookKey(idField.substring(0, dash));
+
+            if (seen++ < safeOffset) continue;
+            if (results.size() >= safeMax) continue;
 
             String titleText = nullToEmpty(doc.get("body"));
             String parent = doc.get("parent");

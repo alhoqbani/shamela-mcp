@@ -73,12 +73,6 @@ public final class SearchPagesV2 {
         int seen = 0;
         for (ScoreDoc sd : top.scoreDocs) {
             Document doc = stored.document(sd.doc);
-            String bookKey = doc.get("book_key");
-            if (bookKey != null) coverage.recordBookKey(bookKey);
-
-            if (seen++ < safeOffset) continue;
-            if (results.size() >= safeMax) continue;
-
             String idField = doc.get("id");
             if (idField == null) continue;
             int dash = idField.indexOf('-');
@@ -90,6 +84,12 @@ public final class SearchPagesV2 {
             } catch (NumberFormatException e) {
                 continue;
             }
+            // Derive bookKey from id since book_key is indexed (for scope filtering)
+            // but not stored. Streams through every hit, capped at COVERAGE_CAP inside.
+            coverage.recordBookKey(idField.substring(0, dash));
+
+            if (seen++ < safeOffset) continue;
+            if (results.size() >= safeMax) continue;
 
             String body = fields.contains("body") ? nullToEmpty(doc.get("body")) : "";
             String foot = fields.contains("foot") ? nullToEmpty(doc.get("foot")) : "";
