@@ -2,28 +2,21 @@ import { z } from "zod";
 
 import type { Catalog } from "../catalog.js";
 import type { Helper } from "../helper.js";
+import { OptionsInputShape, PaginationInput, ResponseFormatInput } from "../schemas.js";
+import { arabize, header, renderResponse, type RenderedResponse } from "../format.js";
 
-export const searchAuthorsInput = {
-    query: z.string().describe("Arabic search phrase, matched against author name + biography."),
-    max_results: z
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .default(20)
-        .describe("Maximum number of hits to return (1-100, default 20)."),
+export const searchAuthorsInputShape = {
+    query: z.string().min(1).describe("Arabic search phrase matched against author name + biography."),
+    options: z.object(OptionsInputShape).strict().optional().describe("morphology / wildcards. No scope (authors aren't scoped by category/period)."),
+    ...PaginationInput,
+    ...ResponseFormatInput,
 };
+export const searchAuthorsInput = z.object(searchAuthorsInputShape).strict();
 
-interface RawHit {
-    author_id: number;
-    snippet: string;
-}
-
+interface RawHit { author_id: number; snippet: string; }
 interface RawEnvelope {
-    total_hits: number;
-    returned: number;
-    query: string;
-    normalized_tokens: string[];
+    query: string; normalized_tokens: string[]; offset: number;
+    total_hits: number; returned: number; has_more: boolean; next_offset?: number;
     results: RawHit[];
 }
 
@@ -31,37 +24,56 @@ export interface SearchAuthorHit {
     author_id: number;
     author_name: string;
     death_year: number | null;
+    book_count: number;
     snippet: string;
 }
 
 export interface SearchAuthorsOutput {
-    total_hits: number;
-    returned: number;
-    query: string;
-    normalized_tokens: string[];
+    total_hits: number; returned: number; offset: number;
+    has_more: boolean; next_offset?: number;
+    query: string; normalized_tokens: string[];
     results: SearchAuthorHit[];
 }
 
-export async function searchAuthors(
+export async function runSearchAuthors(
     helper: Helper,
     catalog: Catalog,
-    args: { query: string; max_results: number },
-): Promise<SearchAuthorsOutput> {
-    const raw = await helper.request<RawEnvelope>("search_authors", args);
-    const enriched: SearchAuthorHit[] = raw.results.map((hit) => {
-        const author = catalog.author(hit.author_id);
+    args: z.infer<typeof searchAuthorsInput>,
+): Promise<RenderedResponse<SearchAuthorsOutput>> {
+    const raw = await helper.request<RawEnvelope>("search_authors", {
+        query: args.query,
+        max_results: args.limit,
+        offset: args.offset,
+        options: args.options ?? {},
+    });
+    const results: SearchAuthorHit[] = raw.results.map((h) => {
+        const rec = catalog.authorRecord(h.author_id);
         return {
-            author_id: hit.author_id,
-            author_name: author.author_name,
-            death_year: author.death_year,
-            snippet: hit.snippet,
+            author_id: h.author_id,
+            author_name: rec?.author_name ?? `(unknown ${h.author_id})`,
+            death_year: rec?.death_year ?? null,
+            book_count: catalog.booksByAuthorId(h.author_id).length,
+            snippet: h.snippet,
         };
     });
-    return {
-        total_hits: raw.total_hits,
-        returned: raw.returned,
-        query: raw.query,
-        normalized_tokens: raw.normalized_tokens,
-        results: enriched,
+    const out: SearchAuthorsOutput = {
+        total_hits: raw.total_hits, returned: raw.returned, offset: raw.offset,
+        has_more: raw.has_more,
+        ...(raw.next_offset !== undefined ? { next_offset: raw.next_offset } : {}),
+        query: raw.query, normalized_tokens: raw.normalized_tokens,
+        results,
     };
+    return renderResponse(out, args.response_format, (data) => {
+        const lines = [header(1, `نتائج البحث في فهرس المؤلفين: «${data.query}»`)];
+        lines.push(`**${arabize(data.total_hits)}** مؤلف موافق، عرض ${arabize(data.returned)}.`);
+        lines.push("");
+        for (const r of data.results) {
+            lines.push(`## ${r.author_name}${r.death_year ? ` (ت ${arabize(r.death_year)}هـ)` : ""}`);
+            lines.push(`id=${r.author_id} — ${arabize(r.book_count)} كتاب`);
+            if (r.snippet) lines.push("", `> ${r.snippet}`);
+            lines.push("");
+        }
+        if (data.has_more) lines.push(`*للمزيد، استخدم \`offset=${data.next_offset}\`.*`);
+        return lines.join("\n");
+    });
 }

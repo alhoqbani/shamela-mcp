@@ -1,6 +1,6 @@
 /**
  * Shared Zod fragments composed into tool input schemas.
- * Per `docs/v1-architecture.md` §"Schemas (locked)".
+ * Per `docs/architecture.md` §"Schemas (locked)".
  */
 
 import { z } from "zod";

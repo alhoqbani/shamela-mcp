@@ -1,5 +1,5 @@
 /**
- * In-memory catalog loaded once from master.db. Per `docs/v1-architecture.md`
+ * In-memory catalog loaded once from master.db. Per `docs/architecture.md`
  * §"SQLite cache strategy" and `docs/scope-implementation.md`.
  *
  * Maps:
@@ -66,20 +66,6 @@ export interface CategoryRecord {
     category_id: number;
     category_name: string;
     category_order: number;
-}
-
-// --- Legacy aliases for v0.0.1 callers --------------------------------------
-
-export interface BookInfo {
-    book_id: number;
-    book_name: string;
-    author_name: string | null;
-}
-
-export interface AuthorInfo {
-    author_id: number;
-    author_name: string;
-    death_year: number | null;
 }
 
 // --- Scope diagnostics ------------------------------------------------------
@@ -239,46 +225,10 @@ export class Catalog {
 
     // --- Public lookups -----------------------------------------------------
 
-    /** Legacy v0.0.1 contract — returns a placeholder shape with book_name + author_name. */
-    book(bookId: number): BookInfo {
-        const rec = this.books.get(bookId);
-        if (!rec) {
-            return {
-                book_id: bookId,
-                book_name: `(unknown book ${bookId})`,
-                author_name: null,
-            };
-        }
-        return {
-            book_id: rec.book_id,
-            book_name: rec.book_name,
-            author_name: this.mainAuthorName(rec) ?? null,
-        };
-    }
-
-    /** v1.0 — full BookRecord or undefined for unknown ids. Throw via caller using ShamelaError. */
     bookRecord(bookId: number): BookRecord | undefined {
         return this.books.get(bookId);
     }
 
-    /** Legacy v0.0.1 contract. */
-    author(authorId: number): AuthorInfo {
-        const rec = this.authors.get(authorId);
-        if (!rec) {
-            return {
-                author_id: authorId,
-                author_name: `(unknown author ${authorId})`,
-                death_year: null,
-            };
-        }
-        return {
-            author_id: rec.author_id,
-            author_name: rec.author_name,
-            death_year: rec.death_year,
-        };
-    }
-
-    /** v1.0 — full AuthorRecord or undefined. */
     authorRecord(authorId: number): AuthorRecord | undefined {
         return this.authors.get(authorId);
     }

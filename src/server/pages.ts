@@ -1,8 +1,8 @@
 /**
  * Per-book SQLite reader. LRU cache of up to 50 sql.js Database handles
- * per `docs/v1-architecture.md` §"SQLite cache strategy".
+ * per `docs/architecture.md` §"SQLite cache strategy".
  *
- * v1.0 surface (extended from v0.0.1's `printedPage`):
+ * Surface:
  *   getPageRow(book_id, page_id)        — { part, page, number, services }
  *   getPagesRows(book_id, page_ids[])   — batch lookup
  *   getPagesRange(book_id, start_id, count) — N consecutive pages
@@ -123,7 +123,6 @@ export class PageStore {
         return fs.existsSync(this.bookPath(bookId));
     }
 
-    /** Legacy v0.0.1 helper. */
     async printedPage(bookId: number, pageId: number): Promise<string | null> {
         const row = await this.getPageRow(bookId, pageId);
         if (!row) return null;

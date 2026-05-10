@@ -1,5 +1,5 @@
 /**
- * shamela-mcp v1.0 workflow benchmark.
+ * shamela-mcp workflow benchmark.
  *
  * Two narratives that simulate how an LLM would chain the 20 tools to answer
  * realistic prompts:
@@ -40,7 +40,7 @@ import { runGetCitation, getCitationInput } from "../src/server/tools/getCitatio
 import { runGetPage, getPageInput } from "../src/server/tools/getPage.js";
 import { runListCategories, listCategoriesInput } from "../src/server/tools/listCategories.js";
 import { runResolve, resolveInput } from "../src/server/tools/resolve.js";
-import { runSearchPages, searchPagesInput } from "../src/server/tools/searchPagesV2.js";
+import { runSearchPages, searchPagesInput } from "../src/server/tools/searchPages.js";
 
 class CallCounter {
     public count = 0;
@@ -209,7 +209,7 @@ async function main(): Promise<number> {
     const services = new ServiceStore(paths.database, sqlWasm);
 
     console.log("=".repeat(72));
-    console.log("shamela-mcp v1.0 workflow benchmark");
+    console.log("shamela-mcp workflow benchmark");
     console.log("=".repeat(72));
 
     let exitCode = 0;

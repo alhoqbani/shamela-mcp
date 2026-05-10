@@ -1,6 +1,6 @@
 /**
  * Markdown/JSON renderers for tool responses + CHARACTER_LIMIT truncation.
- * Per `docs/v1-architecture.md` §"Search result envelope" and mcp-builder
+ * Per `docs/architecture.md` §"Search result envelope" and mcp-builder
  * Node guide §"Character Limits and Truncation".
  *
  * Every tool returns dual content:

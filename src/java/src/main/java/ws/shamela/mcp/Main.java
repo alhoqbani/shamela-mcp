@@ -103,7 +103,7 @@ public final class Main {
             Object v = options.get(k);
             if (v instanceof Boolean b && b) {
                 throw new IllegalStateException(
-                    "OPTION_NOT_SUPPORTED:" + k + ":Option '" + k + "' is not supported in v1.0.");
+                    "OPTION_NOT_SUPPORTED:" + k + ":Option '" + k + "' is not currently supported.");
             }
         }
     }
@@ -165,22 +165,11 @@ public final class Main {
                         "book_docs", safeNumDocs(indexCache, "book"),
                         "author_docs", safeNumDocs(indexCache, "author")
                 );
-                // v0.0.1 commands (preserved)
-                case "search_pages" -> SearchPages.run(
-                        indexCache,
-                        asString(args.get("query")), asInt(args.get("max_results"), 20));
-                case "search_books" -> SearchBooks.run(
-                        indexCache,
-                        asString(args.get("query")), asInt(args.get("max_results"), 20));
-                case "search_authors" -> SearchAuthors.run(
-                        indexCache,
-                        asString(args.get("query")), asInt(args.get("max_results"), 20));
-                // v1.0 commands
-                case "search_pages_v2" -> {
+                case "search_pages" -> {
                     Map<String, Object> opts = (Map<String, Object>) args.getOrDefault("options", new LinkedHashMap<>());
                     rejectPreservation(opts);
                     requireNoConflict(opts);
-                    yield SearchPagesV2.run(
+                    yield SearchPages.run(
                             indexCache,
                             boolFlag(opts, "morphology") ? morphologyAnalyzer() : null,
                             asString(args.get("query")),
@@ -205,11 +194,11 @@ public final class Main {
                             boolFlag(opts, "morphology"),
                             boolFlag(opts, "wildcards"));
                 }
-                case "search_books_v2" -> {
+                case "search_books" -> {
                     Map<String, Object> opts = (Map<String, Object>) args.getOrDefault("options", new LinkedHashMap<>());
                     rejectPreservation(opts);
                     requireNoConflict(opts);
-                    yield SearchBooksV2.run(
+                    yield SearchBooks.run(
                             indexCache,
                             boolFlag(opts, "morphology") ? morphologyAnalyzer() : null,
                             asString(args.get("query")),
@@ -219,11 +208,11 @@ public final class Main {
                             boolFlag(opts, "morphology"),
                             boolFlag(opts, "wildcards"));
                 }
-                case "search_authors_v2" -> {
+                case "search_authors" -> {
                     Map<String, Object> opts = (Map<String, Object>) args.getOrDefault("options", new LinkedHashMap<>());
                     rejectPreservation(opts);
                     requireNoConflict(opts);
-                    yield SearchAuthorsV2.run(
+                    yield SearchAuthors.run(
                             indexCache,
                             boolFlag(opts, "morphology") ? morphologyAnalyzer() : null,
                             asString(args.get("query")),

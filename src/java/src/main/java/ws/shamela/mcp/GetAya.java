@@ -11,7 +11,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
-/** v1.0 get_aya — fetch the body/amiri/majma renderings for a single aya_id. */
+/** get_aya — fetch the body/amiri/majma renderings for a single aya_id. */
 public final class GetAya {
 
     private GetAya() {}

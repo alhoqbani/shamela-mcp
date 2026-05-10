@@ -19,8 +19,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 
 /**
- * v1.0 search_quran — query the pre-built aya/ Lucene index.
- * Aya docs (per docs/v1-architecture.md): id=<aya_id>, body=<emlaa text>,
+ * search_quran — query the pre-built aya/ Lucene index.
+ * Aya docs (per docs/architecture.md): id=<aya_id>, body=<emlaa text>,
  * amiri=<Othmani Amiri>, majma=<KFQPC>. We search the `body` (emlaa) field
  * by default since that's the user-typed orthography.
  */

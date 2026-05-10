@@ -15,7 +15,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 
 /**
- * v1.0 search_titles — search the title/ Lucene index for chapter and section
+ * search_titles — search the title/ Lucene index for chapter and section
  * titles. Title docs have id="<book_id>-<title_id>", body=<title text>, parent.
  */
 public final class SearchTitles {

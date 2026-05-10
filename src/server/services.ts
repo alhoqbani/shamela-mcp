@@ -7,8 +7,8 @@
  *   inservice(book INTEGER, user_excluded INTEGER)
  *
  * Lookup: given a key_id (e.g. an aya_id for tafseer), return all
- * (book_id, page_id) pairs from books that haven't been excluded by the
- * user. v1.0 ignores `user_excluded` (we don't expose the toggle).
+ * (book_id, page_id) pairs. We don't filter on `user_excluded` since
+ * we don't expose the user-exclusion toggle.
  */
 
 import * as fs from "node:fs";

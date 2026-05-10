@@ -19,7 +19,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * v1.0 get_titles_batch — fetch stored title text for a list of (book_id,
+ * get_titles_batch — fetch stored title text for a list of (book_id,
  * title_id) pairs. Title docs use id="<book_id>-<title_id>", body=<text>.
  */
 public final class GetTitlesBatch {

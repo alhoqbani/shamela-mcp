@@ -19,7 +19,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * v1.0 get_pages_batch — fetch stored body/foot/comment for multiple page docs
+ * get_pages_batch — fetch stored body/foot/comment for multiple page docs
  * in one query, identified by `<book_id>-<page_id>` keys on the `id` field.
  */
 public final class GetPagesBatch {
@@ -49,8 +49,8 @@ public final class GetPagesBatch {
             q = new TermInSetQuery("id", refs);
         }
 
-        IndexSearcher searcher = indexCache.searcher(SearchPagesV2.INDEX);
-        StoredFields stored = indexCache.storedFields(SearchPagesV2.INDEX);
+        IndexSearcher searcher = indexCache.searcher(SearchPages.INDEX);
+        StoredFields stored = indexCache.storedFields(SearchPages.INDEX);
         TopDocs top = searcher.search(q, Math.max(1, ids.size()));
 
         Map<String, Map<String, String>> byKey = new HashMap<>();

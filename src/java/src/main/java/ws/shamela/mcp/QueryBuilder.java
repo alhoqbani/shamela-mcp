@@ -17,7 +17,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Shared query construction for all v1.0 search commands. Implements the
+ * Shared query construction for all search commands. Implements the
  * locked behavior in `docs/toggles-implementation.md` §5: per-token MUST,
  * SHOULD over fields, optional WildcardQuery for tokens with `*`/`?`,
  * morphology field swap with QueryParser+Analyzer.stem(). Scope filtering

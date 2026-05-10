@@ -14,7 +14,6 @@
     "build:java": "powershell -ExecutionPolicy Bypass -File scripts/build-java.ps1",
     "build": "npm run build:server && npm run build:java",
     "smoke": "tsx tests/smoke.ts",
-    "smoke:v1": "tsx tests/smoke-v1.ts",
     "benchmark": "tsx tests/benchmark.ts",
     "pack": "powershell -ExecutionPolicy Bypass -File scripts/pack.ps1"
   },

@@ -1,7 +1,6 @@
 /**
- * Error taxonomy for v1.0 per `docs/v1-architecture.md`. User-visible parts
- * are Arabic (consistent with the v0.0.1 i18n decision); diagnostic parts
- * (paths, stack contexts) stay English.
+ * Error taxonomy per `docs/architecture.md`. User-visible parts are Arabic;
+ * diagnostic parts (paths, stack contexts) stay English.
  */
 
 import { ShamelaNotFoundError } from "./paths.js";
@@ -89,7 +88,7 @@ export function emptyScope(diagnostics: Array<{ source: string; contributed: num
 export function optionNotSupported(name: string): ShamelaError {
     return new ShamelaError(
         "OPTION_NOT_SUPPORTED",
-        `Option '${name}' is not supported in v1.0. The default analyzer already strips diacritics and folds alef/ya/waw/ta-marbuta. Track v1.1 for the two-pass verification path.`,
+        `Option '${name}' is not currently supported. The default analyzer already strips diacritics and folds alef/ya/waw/ta-marbuta. See docs/roadmap.md for the planned two-pass verification path.`,
     );
 }
 

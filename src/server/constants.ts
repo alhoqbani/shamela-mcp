@@ -1,6 +1,5 @@
 /**
- * Shared constants for the v1.0 server. Per `docs/v1-architecture.md` and the
- * mcp-builder Node guide.
+ * Shared constants. Per `docs/architecture.md` and the mcp-builder Node guide.
  */
 
 export const VERSION = "1.0.0";

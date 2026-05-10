@@ -1,5 +1,5 @@
 /**
- * shamela-mcp v1.0.0 — MCP server entry point.
+ * shamela-mcp — MCP server entry point.
  *
  * Spins up a Java helper subprocess on first tool call, exposes 20 tools
  * via `registerTool`, returns dual content (markdown text + structuredContent).
@@ -83,17 +83,17 @@ import {
     searchAuthorsInputShape,
     runSearchAuthors,
     type SearchAuthorsOutput,
-} from "./tools/searchAuthorsV2.js";
+} from "./tools/searchAuthors.js";
 import {
     searchBooksInputShape,
     runSearchBooks,
     type SearchBooksOutput,
-} from "./tools/searchBooksV2.js";
+} from "./tools/searchBooks.js";
 import {
     searchPagesInputShape,
     runSearchPages,
     type SearchPagesOutput,
-} from "./tools/searchPagesV2.js";
+} from "./tools/searchPages.js";
 import {
     searchQuranInputShape,
     runSearchQuran,
@@ -182,7 +182,7 @@ async function main(): Promise<void> {
         {
             title: "بحث في صفحات الكتب",
             description:
-                "Search the body (matn) and footnotes (الحواشي) of every Shamela page the user has downloaded locally. AND-combines tokens; each token can match in any of the search_in fields. Default scope is the full downloaded library; pass `scope` (book_ids/author_ids/category_ids/period_*/downloaded_only) to narrow. `options` controls morphology (Arabic root expansion via AlKhalil), wildcards (`*`/`?` per token, cannot combine with morphology), and search_in subset (body/foot/comment). Returns total_hits + paginated results with book name, author, printed-page label, and a snippet with <mark>...</mark> around matches; coverage rolls up by category/century/book/author. preserve_diacritics/_hamza/_digits return OPTION_NOT_SUPPORTED in v1.0. Use `shamela_search_titles` for chapter title search instead. Examples: shamela_search_pages({query:'الكلام'}), shamela_search_pages({query:'استصناع', scope:{category_ids:[17]}}), shamela_search_pages({query:'كلم', options:{morphology:true}}).",
+                "Search the body (matn) and footnotes (الحواشي) of every Shamela page the user has downloaded locally. AND-combines tokens; each token can match in any of the search_in fields. Default scope is the full downloaded library; pass `scope` (book_ids/author_ids/category_ids/period_*/downloaded_only) to narrow. `options` controls morphology (Arabic root expansion via AlKhalil), wildcards (`*`/`?` per token, cannot combine with morphology), and search_in subset (body/foot/comment). Returns total_hits + paginated results with book name, author, printed-page label, and a snippet with <mark>...</mark> around matches; coverage rolls up by category/century/book/author. preserve_diacritics/_hamza/_digits currently return OPTION_NOT_SUPPORTED. Use `shamela_search_titles` for chapter title search instead. Examples: shamela_search_pages({query:'الكلام'}), shamela_search_pages({query:'استصناع', scope:{category_ids:[17]}}), shamela_search_pages({query:'كلم', options:{morphology:true}}).",
             inputSchema: searchPagesInputShape,
             annotations: COMMON_ANNOTATIONS,
         },

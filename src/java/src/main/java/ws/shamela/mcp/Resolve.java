@@ -18,7 +18,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
 /**
- * v1.0 resolve — combined autocomplete against s_book/ and s_author/ indexes.
+ * resolve — combined autocomplete against s_book/ and s_author/ indexes.
  * Per spec §1.5/§1.6 the s_book/s_author indexes are pre-built n-gram indexes
  * shipped with every Shamela install. They use field "single" for s_book and
  * "author" for s_author (per the Importer code in engine.py).
