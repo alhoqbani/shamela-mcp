@@ -203,7 +203,10 @@ function findInstallRoot(): { installRoot: string; probed: ProbedPath[] } {
     throw new ShamelaNotFoundError(probed);
 }
 
-function resolveJre(installRoot: string): string {
+export function resolveJre(
+    installRoot: string,
+    platform: NodeJS.Platform = process.platform,
+): string {
     const envJre = process.env.SHAMELA_JRE?.trim();
     if (envJre) {
         // Accept either a directory or the executable itself.
@@ -221,15 +224,21 @@ function resolveJre(installRoot: string): string {
         throw new Error(`SHAMELA_JRE = ${envJre} لا يُشير إلى ملف جافا تنفيذي صالح.`);
     }
 
-    const isWin = process.platform === "win32";
     const candidates: string[] = [];
-    if (isWin) {
+    if (platform === "win32") {
         candidates.push(
             path.join(installRoot, "app", "win", "64", "jre", "2", "bin", "java.exe"),
             path.join(installRoot, "app", "win", "32", "jre", "2", "bin", "java.exe"),
         );
-    } else if (process.platform === "darwin") {
-        candidates.push(path.join(installRoot, "app", "mac", "64", "jre", "2", "bin", "java"));
+    } else if (platform === "darwin") {
+        // Mac Shamela ships the bundled JRE under the CPU architecture name
+        // (arm64 on Apple Silicon, x86_64 on Intel), not the Windows-style
+        // 32/64 split. Probe the legacy "64" path last for any older install.
+        candidates.push(
+            path.join(installRoot, "app", "mac", "arm64", "jre", "2", "bin", "java"),
+            path.join(installRoot, "app", "mac", "x86_64", "jre", "2", "bin", "java"),
+            path.join(installRoot, "app", "mac", "64", "jre", "2", "bin", "java"),
+        );
     } else {
         candidates.push(path.join(installRoot, "app", "linux", "64", "jre", "2", "bin", "java"));
     }
@@ -237,6 +246,7 @@ function resolveJre(installRoot: string): string {
     for (const c of candidates) if (fs.existsSync(c)) return c;
     throw new Error(
         `تعذَّر إيجاد جافا المرفقة مع المكتبة الشاملة في ${path.join(installRoot, "app")}. ` +
+            `بُحث في: ${candidates.join(", ")}. ` +
             `اضبط متغيِّر SHAMELA_JRE ليُشير إلى ملف جافا تنفيذي (إعداد متقدم).`,
     );
 }
