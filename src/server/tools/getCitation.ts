@@ -81,6 +81,23 @@ export async function runGetCitation(
         notes = full.notes;
     }
 
+    // (#25): surface muḥaqqiq/edition from the Shamela name
+    // suffix («ت <editor>» / «ط <publisher>»), which master.db columns lack.
+    const parts = book.book_name.split(/\s+-\s+/);
+    const suffix = (book.meta_data?.suffix?.trim() || (parts.length > 1 ? parts[parts.length - 1]!.trim() : "")) || "";
+    const editorFromName = /^ت\s/.test(suffix) ? suffix.replace(/^ت\s+/, "").trim() : null;
+    const publisherFromName = /^ط\s/.test(suffix) ? suffix.replace(/^ط\s+/, "").trim() : null;
+    if (editorFromName || publisherFromName) {
+        const found: string[] = [];
+        if (editorFromName) found.push(`المحقق (من اسم الشاملة): ${editorFromName}`);
+        if (publisherFromName) found.push(`الناشر/الطبعة (من اسم الشاملة): ${publisherFromName}`);
+        notes = found.concat(
+            notes.filter(
+                (n) => !(editorFromName && /editor|muḥaqqiq/i.test(n)) && !(publisherFromName && /publisher/i.test(n)),
+            ),
+        );
+    }
+
     const out: GetCitationOutput = {
         formatted,
         style: args.style,

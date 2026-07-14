@@ -31,8 +31,13 @@ export interface GetTafseerOfAyaOutput {
     aya: number;
     total: number;
     returned: number;
+    /** Honest coverage caveat: this index is curated and may omit downloaded tafsirs. */
+    coverage_note: string;
     results: TafseerHit[];
 }
+
+const COVERAGE_NOTE =
+    "هذه القائمة من فهرس الخدمة المنتقى (service/tafseer.db) وقد لا يشمل كل تفاسيرك المنزَّلة — كثير من التفاسير لا تحمل علامات آيات على صفحاتها فلا تظهر هنا. لاستيفاء تفاسيرك المنزَّلة، راجع تصنيفات التفسير عبر shamela_list_downloaded_books(category_id=3) و(category_id=4)، ثم تنقّل إليها بفهرسها (shamela_get_toc).";
 
 export async function runGetTafseerOfAya(
     catalog: Catalog,
@@ -70,12 +75,15 @@ export async function runGetTafseerOfAya(
         aya: sa.aya,
         total: hits.length,
         returned: results.length,
+        coverage_note: COVERAGE_NOTE,
         results,
     };
     return renderResponse(out, args.response_format, (data) => {
         const lines = [
             header(1, `تفاسير الآية ${data.surah_name} ${arabize(data.surah)}:${arabize(data.aya)}`),
             `**${arabize(data.total)}** كتاب يعلِّق على هذه الآية، منها ${arabize(data.returned)} في النطاق الحالي.`,
+            "",
+            `> *${data.coverage_note}*`,
             "",
         ];
         for (const r of data.results) {

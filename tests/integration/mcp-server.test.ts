@@ -41,6 +41,13 @@ const EXPECTED_TOOL_NAMES = [
     "shamela_list_downloaded_books",
     "shamela_get_book_parts",
     "shamela_get_page_services",
+    "shamela_search_phrase",
+    "shamela_search_hadith",
+    "shamela_health",
+    "shamela_search_exact",
+    "shamela_search_boolean",
+    "shamela_root_stats",
+    "shamela_books_by_period",
 ] as const;
 
 describe("MCP server end-to-end (InMemoryTransport)", () => {
@@ -63,7 +70,7 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
         await client.close();
     });
 
-    it("lists all 20 expected tools", async () => {
+    it("lists all 27 expected tools", async () => {
         const result = await client.listTools();
         const names = new Set(result.tools.map((t) => t.name));
         for (const expected of EXPECTED_TOOL_NAMES) {
@@ -134,7 +141,7 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
     // installed (tafseer, hadith) accept either success or a clean
     // SERVICE_KEY_NOT_FOUND, mirroring the smoke convention.
     // ----------------------------------------------------------------------
-    describe("all 20 tools round-trip via MCP protocol", () => {
+    describe("core tools round-trip via MCP protocol", () => {
         it("shamela_search_titles", async () => {
             const r = (await client.callTool({
                 name: "shamela_search_titles",
@@ -401,13 +408,30 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
         });
 
         it("shamela_list_downloaded_books", async () => {
-            const r = (await client.callTool({
-                name: "shamela_list_downloaded_books",
-                arguments: { limit: 100, offset: 0, response_format: "json" },
-            })) as CallResult;
-            expect(r.isError, errText(r)).toBeFalsy();
-            const sc = r.structuredContent as { books: Array<{ book_id: number }> };
-            expect(sc.books.some((b) => b.book_id === FIXTURE_BOOK_ID)).toBe(true);
+            // The fixture book is not necessarily in the first page on a large
+            // library (ids are sorted ascending), so page through until found.
+            type Out = {
+                books: Array<{ book_id: number }>;
+                has_more: boolean;
+                next_offset?: number;
+            };
+            let offset = 0;
+            let found = false;
+            for (let page = 0; page < 20; page++) {
+                const r = (await client.callTool({
+                    name: "shamela_list_downloaded_books",
+                    arguments: { limit: 100, offset, response_format: "json" },
+                })) as CallResult;
+                expect(r.isError, errText(r)).toBeFalsy();
+                const sc = r.structuredContent as Out;
+                if (sc.books.some((b) => b.book_id === FIXTURE_BOOK_ID)) {
+                    found = true;
+                    break;
+                }
+                if (!sc.has_more || sc.next_offset === undefined) break;
+                offset = sc.next_offset;
+            }
+            expect(found, `fixture book ${FIXTURE_BOOK_ID} not in downloaded list`).toBe(true);
         });
 
         it("shamela_get_book_parts (single-volume fixture)", async () => {

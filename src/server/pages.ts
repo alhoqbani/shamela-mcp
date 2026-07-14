@@ -22,6 +22,16 @@ import { PER_BOOK_CACHE_LIMIT } from "./constants.js";
 
 const BOOK_LITERAL = "الكتاب"; // when part == "الكتاب", we treat it as no part
 
+/** Format a page's printed-page label (e.g. "3/ 512") from its row. */
+function formatPrintedPage(row: PageRow): string | null {
+    const part = row.part?.trim() ?? "";
+    const pageStr = row.page !== null ? String(row.page) : "";
+    if (part && part !== BOOK_LITERAL) {
+        return pageStr ? `${part}/ ${pageStr}` : part;
+    }
+    return pageStr || null;
+}
+
 export interface PageRow {
     page_id: number;
     part: string | null;
@@ -138,12 +148,20 @@ export class PageStore {
     async printedPage(bookId: number, pageId: number): Promise<string | null> {
         const row = await this.getPageRow(bookId, pageId);
         if (!row) return null;
-        const part = row.part?.trim() ?? "";
-        const pageStr = row.page !== null ? String(row.page) : "";
-        if (part && part !== BOOK_LITERAL) {
-            return pageStr ? `${part}/ ${pageStr}` : part;
-        }
-        return pageStr || null;
+        return formatPrintedPage(row);
+    }
+
+    /**
+     * Batch variant of printedPage (perf, #24 — kills the N+1 in
+     * search enrichment): one SQLite query per book instead of one per hit.
+     */
+    async printedPages(bookId: number, pageIds: number[]): Promise<Map<number, string | null>> {
+        const rows = await this.getPagesRows(bookId, pageIds);
+        const out = new Map<number, string | null>();
+        rows.forEach((row, i) => {
+            out.set(pageIds[i]!, row ? formatPrintedPage(row) : null);
+        });
+        return out;
     }
 
     async getPageRow(bookId: number, pageId: number): Promise<PageRow | null> {

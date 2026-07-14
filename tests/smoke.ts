@@ -108,10 +108,11 @@ async function main(): Promise<number> {
         check("list_categories contains فقه", fiqhCat !== undefined, fiqhCat ? `id=${fiqhCat.category_id} count=${fiqhCat.book_count}` : "");
 
         // ---------------- 18. list_downloaded_books ----------------
-        const dl = runListDownloadedBooks(catalog, listDownloadedBooksInput.parse({ limit: 100, offset: 0, response_format: "json" }));
+        const dl = await runListDownloadedBooks(catalog, pages, listDownloadedBooksInput.parse({ limit: 100, offset: 0, response_format: "json" }));
         check("list_downloaded_books contains 9942", dl.structuredContent.books.some((b) => b.book_id === 9942));
-        const dlMd = runListDownloadedBooks(
+        const dlMd = await runListDownloadedBooks(
             catalog,
+            pages,
             listDownloadedBooksInput.parse({ limit: 100, offset: 0, response_format: "markdown" }),
         );
         check(
@@ -121,7 +122,7 @@ async function main(): Promise<number> {
         );
 
         // ---------------- 7. get_book ----------------
-        const book = await runGetBook(catalog, pages, getBookInput.parse({ book_id: 9942, response_format: "json" }));
+        const book = await runGetBook(catalog, pages, helper, getBookInput.parse({ book_id: 9942, response_format: "json" }));
         check(
             "get_book(9942) name",
             book.structuredContent.book_name === "الأصول من علم الأصول",

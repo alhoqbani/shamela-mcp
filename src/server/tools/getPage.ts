@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 import type { Catalog } from "../catalog.js";
+import { PAGE_BODY_BUDGET } from "../constants.js";
 import { bookNotDownloaded, bookNotFound, pageNotFound } from "../errors.js";
 import type { Helper } from "../helper.js";
+import { getChunk } from "../longtext.js";
 import type { PageStore, TocEntry } from "../pages.js";
 import { ResponseFormatInput } from "../schemas.js";
 import { arabize, header, renderResponse, type RenderedResponse } from "../format.js";
@@ -11,6 +13,14 @@ export const getPageInputShape = {
     book_id: z.number().int().positive().describe("The book id."),
     page_id: z.number().int().positive().describe("The page id (Lucene/SQLite internal id, not the printed page number)."),
     keep_html: z.boolean().default(false).describe("If true, preserve inline HTML markers (e.g. <span data-type='title'>). Default false strips them for plain Arabic display."),
+    body_part: z
+        .number()
+        .int()
+        .min(1)
+        .default(1)
+        .describe(
+            `For long pages: when the body exceeds ~${PAGE_BODY_BUDGET} characters it is split into parts. Pass the 1-based part to read (default 1). The response reports body_part/body_total_parts/body_has_more; request the next part by incrementing. The footnote/comment are returned with part 1.`,
+        ),
     ...ResponseFormatInput,
 };
 export const getPageInput = z.object(getPageInputShape).strict();
@@ -31,6 +41,14 @@ export interface GetPageOutput {
     body: string;
     foot: string;
     comment: string;
+    /** 1-based index of the body part returned (1 when the page is short). */
+    body_part: number;
+    /** Total number of parts the body was split into (1 when short). */
+    body_total_parts: number;
+    /** True when further body parts remain (fetch with body_part+1). */
+    body_has_more: boolean;
+    /** Display advice when the body is long enough to be split; null otherwise. */
+    _display: string | null;
     prev_page_id: number | null;
     next_page_id: number | null;
     containing_titles: ContainingTitle[];
@@ -71,11 +89,20 @@ export async function runGetPage(
         titleMap = new Map(titles.results.map((t) => [t.title_id, t.title_text]));
     }
 
-    const body = content?.body ?? "";
-    const foot = content?.foot ?? "";
-    const comment = content?.comment ?? "";
-
     const stripIfHtml = (s: string) => (args.keep_html ? s : s.replace(HTML_TAG_RE, "").replace(/\r/g, "\n"));
+
+    const fullBody = stripIfHtml(content?.body ?? "");
+    const fullFoot = stripIfHtml(content?.foot ?? "");
+    const fullComment = stripIfHtml(content?.comment ?? "");
+
+    // #16 — paginate a long page body so the model never dumps a huge
+    // page in one shot. Short pages stay a single part (no _display advice).
+    const chunk = getChunk(fullBody, args.body_part, PAGE_BODY_BUDGET);
+    const onFirst = chunk.part === 1;
+    const display =
+        chunk.total_parts > 1
+            ? `النص طويل، قُسِّم إلى ${arabize(chunk.total_parts)} أجزاء (هذا الجزء ${arabize(chunk.part)}). اعرض المعروض كاملًا حرفيًّا أو اسأل المستخدم عن طريقة العرض؛ ولجلب التالي استخدم body_part=${chunk.part < chunk.total_parts ? chunk.part + 1 : chunk.total_parts}. (الحاشية والتعليق يظهران مع الجزء الأول.)`
+            : null;
 
     const printed = await pages.printedPage(args.book_id, args.page_id);
     const out: GetPageOutput = {
@@ -85,9 +112,13 @@ export async function runGetPage(
         page_id: args.page_id,
         printed_page: printed,
         part: row.part,
-        body: stripIfHtml(body),
-        foot: stripIfHtml(foot),
-        comment: stripIfHtml(comment),
+        body: chunk.text,
+        foot: onFirst ? fullFoot : "",
+        comment: onFirst ? fullComment : "",
+        body_part: chunk.part,
+        body_total_parts: chunk.total_parts,
+        body_has_more: chunk.has_more,
+        _display: display,
         prev_page_id: args.page_id > 1 ? args.page_id - 1 : null,
         next_page_id: args.page_id < totalPages ? args.page_id + 1 : null,
         containing_titles: ancestor.map((a: TocEntry) => ({
@@ -106,9 +137,10 @@ export async function runGetPage(
             lines.push(data.containing_titles.map((t) => t.title_text).filter(Boolean).join(" › "));
         }
         if (data.body) {
-            lines.push("", header(3, "المتن"));
+            lines.push("", header(3, data.body_total_parts > 1 ? `المتن (جزء ${arabize(data.body_part)}/${arabize(data.body_total_parts)})` : "المتن"));
             lines.push(data.body);
         }
+        if (data._display) lines.push("", `> *${data._display}*`);
         if (data.foot) {
             lines.push("", header(3, "الحاشية"));
             lines.push(data.foot);

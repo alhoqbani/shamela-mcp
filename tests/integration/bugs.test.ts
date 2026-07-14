@@ -39,7 +39,7 @@ describe("Bug #2 — search_books must honor scope in total_hits/has_more/next_o
 
         const scoped = await runSearchBooks(helper, catalog, {
             query: QUERY,
-            scope: { author_ids: [IBN_UTHAYMEEN_ID] },
+            scope: { author_ids: [IBN_UTHAYMEEN_ID], downloaded_only: false },
             limit: 100,
             offset: 0,
             response_format: "json",
@@ -77,7 +77,7 @@ describe("Bug #2 — search_books must honor scope in total_hits/has_more/next_o
         // unscoped results, all 3 of which happened to be other authors' books.
         const r = await runSearchBooks(helper, catalog, {
             query: QUERY,
-            scope: { author_ids: [IBN_UTHAYMEEN_ID] },
+            scope: { author_ids: [IBN_UTHAYMEEN_ID], downloaded_only: false },
             limit: 3,
             offset: 0,
             response_format: "json",
@@ -92,7 +92,7 @@ describe("Bug #2 — search_books must honor scope in total_hits/has_more/next_o
     it("has_more / next_offset are correct on the scoped result set, not the pre-scope set", async () => {
         const r = await runSearchBooks(helper, catalog, {
             query: QUERY,
-            scope: { author_ids: [IBN_UTHAYMEEN_ID] },
+            scope: { author_ids: [IBN_UTHAYMEEN_ID], downloaded_only: false },
             limit: 100,
             offset: 0,
             response_format: "json",

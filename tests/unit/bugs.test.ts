@@ -12,6 +12,7 @@ import type {
     BookRecord,
     Catalog,
 } from "../../src/server/catalog.js";
+import type { Helper } from "../../src/server/helper.js";
 import type { PageStore } from "../../src/server/pages.js";
 import { runGetBook } from "../../src/server/tools/getBook.js";
 
@@ -50,7 +51,12 @@ function makeCatalog(book: BookRecord): Catalog {
 function makePages(hasContent: boolean): PageStore {
     return {
         bookHasContent: vi.fn(async () => hasContent),
+        getPagesRange: vi.fn(async () => []),
     } as unknown as PageStore;
+}
+
+function makeHelper(): Helper {
+    return { request: vi.fn(async () => ({ results: [] })) } as unknown as Helper;
 }
 
 describe("Bug #3 — get_book.downloaded must reflect actual content, not just master.db flag", () => {
@@ -59,7 +65,7 @@ describe("Bug #3 — get_book.downloaded must reflect actual content, not just m
         const catalog = makeCatalog(book);
         const pages = makePages(/* hasContent */ false);
 
-        const r = await runGetBook(catalog, pages, {
+        const r = await runGetBook(catalog, pages, makeHelper(), {
             book_id: 27,
             response_format: "json",
         });
@@ -73,7 +79,7 @@ describe("Bug #3 — get_book.downloaded must reflect actual content, not just m
         const catalog = makeCatalog(book);
         const pages = makePages(/* hasContent */ true);
 
-        const r = await runGetBook(catalog, pages, {
+        const r = await runGetBook(catalog, pages, makeHelper(), {
             book_id: 9942,
             response_format: "json",
         });
@@ -86,7 +92,7 @@ describe("Bug #3 — get_book.downloaded must reflect actual content, not just m
         const catalog = makeCatalog(book);
         const pages = makePages(/* hasContent */ true); // shouldn't matter
 
-        const r = await runGetBook(catalog, pages, {
+        const r = await runGetBook(catalog, pages, makeHelper(), {
             book_id: 9999,
             response_format: "json",
         });

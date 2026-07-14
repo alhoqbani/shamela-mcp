@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 import type { Catalog } from "../catalog.js";
+import { MULTIPAGE_CHAR_BUDGET } from "../constants.js";
 import { bookNotDownloaded, bookNotFound, titleNotFound } from "../errors.js";
 import type { Helper } from "../helper.js";
+import { trimPagesByBudget } from "../longtext.js";
 import type { PageStore } from "../pages.js";
 import { ResponseFormatInput } from "../schemas.js";
 import { arabize, header, renderResponse, type RenderedResponse } from "../format.js";
@@ -35,6 +37,9 @@ export interface GetBookSectionOutput {
     end_page_id: number;
     total_pages_in_section: number;
     truncated: boolean;
+    next_start_page_id: number | null;
+    /** Display advice when the section was cut short (by max_pages or char budget). */
+    _display: string | null;
     pages: SectionPage[];
 }
 
@@ -70,7 +75,7 @@ export async function runGetBookSection(
 
     const stripIfHtml = (s: string) => (args.keep_html ? s : s.replace(HTML_TAG_RE, "").replace(/\r/g, "\n"));
 
-    const pagesOut: SectionPage[] = await Promise.all(
+    const allPages: SectionPage[] = await Promise.all(
         rows.map(async (r) => {
             const c = contentMap.get(r.page_id) ?? { body: "", foot: "", comment: "" };
             const printed = await pages.printedPage(args.book_id, r.page_id);
@@ -85,6 +90,18 @@ export async function runGetBookSection(
         }),
     );
 
+    // #16 — stop early when bodies are large, even within max_pages, so a
+    // long chapter doesn't dump in one response.
+    const { kept: pagesOut, trimmed: budgetTrimmed } = trimPagesByBudget(allPages, MULTIPAGE_CHAR_BUDGET);
+    const lastId = pagesOut.length ? pagesOut[pagesOut.length - 1]!.page_id : section.start_page_id - 1;
+    const truncated = pagesOut.length < section.total_pages;
+    const moreInSection = lastId < section.end_page_id;
+    const display = truncated
+        ? (budgetTrimmed
+              ? `القسم طويل، فعُرِض ${arabize(pagesOut.length)} من ${arabize(section.total_pages)} صفحة لضبط الحجم. أكمِل بـ shamela_get_pages_range(start_page_id=${lastId + 1}) أو ارفع max_pages.`
+              : `القسم مقطوع عند حدّ max_pages — عُرِض ${arabize(pagesOut.length)} من ${arabize(section.total_pages)}. أكمِل بـ start_page_id=${lastId + 1} أو ارفع max_pages.`)
+        : null;
+
     const out: GetBookSectionOutput = {
         book_id: args.book_id,
         book_name: rec.book_name,
@@ -94,7 +111,9 @@ export async function runGetBookSection(
         start_page_id: section.start_page_id,
         end_page_id: section.end_page_id,
         total_pages_in_section: section.total_pages,
-        truncated: pagesOut.length < section.total_pages,
+        truncated,
+        next_start_page_id: moreInSection ? lastId + 1 : null,
+        _display: display,
         pages: pagesOut,
     };
     return renderResponse(out, args.response_format, (data) => {
@@ -108,12 +127,7 @@ export async function runGetBookSection(
             if (p.body) lines.push(p.body);
             if (p.foot) lines.push("", `_${p.foot}_`);
         }
-        if (data.truncated) {
-            lines.push(
-                "",
-                `*القسم مقطوع — تم عرض ${arabize(data.pages.length)} من ${arabize(data.total_pages_in_section)} صفحة. ارفع \`max_pages\` للمزيد.*`,
-            );
-        }
+        if (data._display) lines.push("", `> *${data._display}*`);
         return lines.join("\n");
     });
 }

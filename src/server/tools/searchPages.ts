@@ -107,24 +107,38 @@ export async function runSearchPages(
         options: args.options ?? {},
     });
 
-    const enriched: SearchPageHit[] = [];
+    // Perf (#24): batch printed-page lookups — one SQLite query per book
+    // instead of one per hit (kills the N+1 in `for (hit) await printedPage`).
+    // Books are queried in parallel; results are byte-for-byte identical.
+    const pageIdsByBook = new Map<number, number[]>();
     for (const hit of raw.results) {
+        const list = pageIdsByBook.get(hit.book_id) ?? [];
+        list.push(hit.page_id);
+        pageIdsByBook.set(hit.book_id, list);
+    }
+    const printedByBook = new Map<number, Map<number, string | null>>();
+    await Promise.all(
+        Array.from(pageIdsByBook.entries()).map(async ([bookId, pageIds]) => {
+            printedByBook.set(bookId, await pages.printedPages(bookId, pageIds));
+        }),
+    );
+
+    const enriched: SearchPageHit[] = raw.results.map((hit) => {
         const rec = catalog.bookRecord(hit.book_id);
-        const printed = await pages.printedPage(hit.book_id, hit.page_id);
-        enriched.push({
+        return {
             book_id: hit.book_id,
             book_name: rec?.book_name ?? `(unknown ${hit.book_id})`,
             author_name: rec ? catalog.mainAuthorName(rec) : null,
             category: rec ? catalog.categoryPath(rec.book_category)[0] ?? null : null,
             book_date: rec?.book_date ?? null,
             page_id: hit.page_id,
-            printed_page: printed,
+            printed_page: printedByBook.get(hit.book_id)?.get(hit.page_id) ?? null,
             matched_in: hit.matched_in,
             snippet_body: hit.snippet_body,
             snippet_foot: hit.snippet_foot,
             ...(hit.snippet_comment ? { snippet_comment: hit.snippet_comment } : {}),
-        });
-    }
+        };
+    });
 
     const coverage = enrichCoverage(raw.coverage, catalog);
     const out: SearchPagesOutput = {

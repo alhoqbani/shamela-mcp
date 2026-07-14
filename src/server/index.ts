@@ -70,6 +70,7 @@ import {
 } from "./tools/getTafseerOfAya.js";
 import { getTocInputShape, runGetToc, type GetTocOutput } from "./tools/getToc.js";
 import {
+    listCategoriesInput,
     listCategoriesInputShape,
     runListCategories,
     type ListCategoriesOutput,
@@ -105,6 +106,21 @@ import {
     runSearchTitles,
     type SearchTitlesOutput,
 } from "./tools/searchTitles.js";
+import {
+    searchPhraseInputShape,
+    runSearchPhrase,
+    type SearchPhraseOutput,
+} from "./tools/searchPhrase.js";
+import {
+    searchHadithInputShape,
+    runSearchHadith,
+    type SearchHadithOutput,
+} from "./tools/searchHadith.js";
+import { healthInput, healthInputShape, runHealth, type HealthOutput } from "./tools/health.js";
+import { searchExactInputShape, runSearchExact, type SearchExactOutput } from "./tools/searchExact.js";
+import { searchBooleanInputShape, runSearchBoolean, type SearchBooleanOutput } from "./tools/searchBoolean.js";
+import { rootStatsInputShape, runRootStats, type RootStatsOutput } from "./tools/rootStats.js";
+import { booksByPeriodInputShape, runBooksByPeriod, type BooksByPeriodOutput } from "./tools/booksByPeriod.js";
 
 // @ts-expect-error — esbuild `--loader:.wasm=binary` inlines this as a Uint8Array.
 import sqlWasm from "sql.js/dist/sql-wasm.wasm";
@@ -114,6 +130,29 @@ const SQL_WASM_BINARY: Uint8Array = sqlWasm as unknown as Uint8Array;
 function logInfo(msg: string): void {
     process.stderr.write(`[shamela-mcp] ${msg}\n`);
 }
+
+/**
+ * Server-level guidance surfaced to the model (anti-hallucination governance —
+ * proposal #8). The client shows this to the LLM to shape how it uses the tools.
+ */
+const SERVER_INSTRUCTIONS = `أنت متصل بمكتبة المستخدم المحلية من «المكتبة الشاملة» للقراءة فقط. التزم بما يلي:
+- لا تنسب نصًّا إلى كتابٍ إلا إذا جاء فعلًا من نتيجة أداة؛ ولا تُكمِل النصوص أو الأسانيد من معرفتك العامة.
+- ميِّز دائمًا بين المتن (body) والحاشية (foot)؛ الحاشية كلام المحقِّق أو المعلِّق لا كلام المصنِّف، فلا تنسبها إليه.
+- عند الاستشهاد استعمل أداة shamela_get_citation، وصرِّح بحال الترقيم إن كان «بترقيم الشاملة آليًّا» ولا تَعُدَّه ترقيم المطبوع.
+- لا تختلق بيانات نشرٍ (ناشر/طبعة/محقِّق) غير موجودة؛ إذا نقصت فاذكر أنها غير متوفرة.
+- البحث يقتصر على الكتب المنزَّلة على جهاز المستخدم؛ إن لم تظهر نتائج فقد لا يكون الكتاب منزَّلًا.
+- للبحث عن عبارةٍ متتاليةٍ بالضبط أو كلمتين متقاربتين استعمل shamela_search_phrase بدل shamela_search_pages.
+- لا تُغرِق المستخدم بنصٍّ طويل: get_page يقطّع المتن (body_part / body_total_parts / body_has_more)، وget_pages_range وget_book_section يقفان عند ميزانية الحجم ويُرجعان next_start_page_id؛ متى طال النص فاعرضه على أجزاء أو اسأل المستخدم عن طريقة العرض (انظر الحقل _display).
+- المكتبة الشاملة متعددة التصنيفات (41 تصنيفًا، وكتب التفسير وحدها موزَّعة على التصنيفات 3 و4 و5)؛ فضيّق نطاق البحث والتصفّح بالتصنيف المناسب عبر category_id.
+- أداة get_tafseer_of_aya تعتمد فهرسًا منتقًى لا يشمل كل التفاسير المنزَّلة؛ لاستيفائها راجع تصنيفات التفسير المنزَّلة عبر shamela_list_downloaded_books(category_id=3 ثم 4)، ولا تَعُدَّ غيابَ كتابٍ من القائمة دليلًا على أنه لا يفسّر الآية.`;
+
+/** Developer-facing data-model summary, exposed as the shamela://schema resource. */
+const SHAMELA_SCHEMA_DOC = `# مخطط بيانات المكتبة الشاملة (موجز للمطوّرين)
+- **master.db**: فهرس الكتب والمؤلفين والتصنيفات. الجدول \`book\`: book_id, book_name, book_category, book_date, authors, major_ondisk (الكتاب مُنزَّل إن > 0).
+- **book/<id%1000>/<id>.db**: قاعدة كل كتاب. الجدول \`page\` (id, part, page, number, services) والجدول \`title\` (فهرس الأبواب).
+- **service/{tafseer,hadeeth,trajim}.db**: جداول الربط — \`service(key_id, book_id, page_id)\` و\`inservice(book, user_excluded)\`. key_id = aya_id للتفسير، ومفتاح الحديث للحديث. (ملاحظة: هذه الجداول منتقاة ولا تغطي كل التفاسير المنزّلة.)
+- **فهارس Lucene**: نصوص الصفحات (body/foot/comment) والعناوين والمؤلفين والآيات — يقرؤها المساعد الجافي.
+- القراءة فقط؛ لا تُكتب ملفات الشاملة أبدًا.`;
 
 export interface Backend {
     helper: Helper;
@@ -176,7 +215,7 @@ export async function createBackend(): Promise<Backend> {
 export function createServer(getBackend: () => Promise<Backend>): McpServer {
     const server = new McpServer(
         { name: "shamela", version: VERSION },
-        { capabilities: { tools: {} } },
+        { capabilities: { tools: {}, resources: {}, prompts: {} }, instructions: SERVER_INSTRUCTIONS },
     );
 
     // ----------- 1. shamela_search_pages -----------
@@ -261,7 +300,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "جلب صفحة",
             description:
-                "Fetch the full text of one Shamela page (book_id, page_id). Returns body (matn), foot (footnotes), comment (user notes), printed_page label, prev/next page ids, the chapter ancestor chain (root → leaf), and the category path. Set keep_html=true to preserve inline <span data-type='title'> markers; default strips them. The book must be downloaded (BOOK_NOT_DOWNLOADED otherwise). For batch reads use shamela_get_pages_range; for full chapters use shamela_get_book_section.",
+                "Fetch the full text of one Shamela page (book_id, page_id). Returns body (matn), foot (footnotes), comment (user notes), printed_page label, prev/next page ids, the chapter ancestor chain (root → leaf), and the category path. Set keep_html=true to preserve inline <span data-type='title'> markers; default strips them. The book must be downloaded (BOOK_NOT_DOWNLOADED otherwise). For batch reads use shamela_get_pages_range; for full chapters use shamela_get_book_section. Long pages: the body is split into parts of ~4000 chars — `body_part` selects the 1-based part, and body_total_parts/body_has_more report the split (footnote/comment come with part 1; a `_display` hint advises when to ask the user how to show it).",
             inputSchema: getPageInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
@@ -306,7 +345,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         async (args) => {
             try {
                 const b = await getBackend();
-                const r = await runGetBook(b.catalog, b.pages, args as Parameters<typeof runGetBook>[2]);
+                const r = await runGetBook(b.catalog, b.pages, b.helper, args as Parameters<typeof runGetBook>[3]);
                 return r as unknown as ToolResult;
             } catch (e) { return wrapErr(e); }
         },
@@ -337,7 +376,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "قائمة التصنيفات",
             description:
-                "List all 41 categories in Shamela's catalog. Categories are flat (no parent_id, no transitive expansion). Each entry has category_id, category_name, and book_count (total books in catalog under that category). Use category_id values with scope.category_ids in search_pages / search_books to narrow searches. Set include_counts=false to skip the book counts (slightly faster but counts are cached so cost is negligible).",
+                "List all 41 categories in Shamela's catalog. Categories are flat (no parent_id, no transitive expansion). Each entry has category_id, category_name, and book_count (total books in catalog under that category). Use category_id values with scope.category_ids in search_pages / search_books to narrow searches. Set include_counts=false to skip the book counts (slightly faster but counts are cached so cost is negligible). Each entry also reports downloaded_count (books in that category present on THIS machine), and downloaded_only=true lists only categories where the user has downloads — useful because Shamela is a 41-category library and tafsir alone spans categories 3 (التفسير), 4 (علوم القرآن وأصول التفسير), and 5 (التجويد والقراءات).",
             inputSchema: listCategoriesInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
@@ -375,7 +414,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "جلب نطاق صفحات",
             description:
-                "Fetch N (1–20, default 5) consecutive pages from a downloaded book starting at start_page_id. Faster than calling shamela_get_page in a loop. Each page entry has page_id, printed_page, part, body, foot, comment. has_more flag indicates whether more pages exist after the returned range. For full chapters use shamela_get_book_section instead — it knows where the chapter ends. Example: shamela_get_pages_range({book_id:<id>, start_page_id:1, count:5}). Find downloaded book ids via shamela_list_downloaded_books.",
+                "Fetch N (1–20, default 5) consecutive pages from a downloaded book starting at start_page_id. Faster than calling shamela_get_page in a loop. Each page entry has page_id, printed_page, part, body, foot, comment. has_more flag indicates whether more pages exist after the returned range. Very long ranges are cut short to stay within a size budget; when that happens the response sets next_start_page_id and a `_display` hint — continue from there. For full chapters use shamela_get_book_section instead — it knows where the chapter ends. Example: shamela_get_pages_range({book_id:<id>, start_page_id:1, count:5}). Find downloaded book ids via shamela_list_downloaded_books.",
             inputSchema: getPagesRangeInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
@@ -394,7 +433,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "جلب باب من كتاب",
             description:
-                "Fetch every page under a chapter title. Resolves the chapter's start/end page range from the per-book SQLite (next-sibling-title boundary), then batch-reads the page contents. Capped at max_pages (default 30, max 100); sets `truncated:true` if the section is longer. Use shamela_get_toc to find title_ids, then this tool to read the matching section. Example: shamela_get_book_section({book_id:<id>, title_id:<title_id from get_toc>}).",
+                "Fetch every page under a chapter title. Resolves the chapter's start/end page range from the per-book SQLite (next-sibling-title boundary), then batch-reads the page contents. Capped at max_pages (default 30, max 100); sets `truncated:true` if the section is longer. Long sections also stop early on a character budget (even within max_pages) and return next_start_page_id + a `_display` hint to continue. Use shamela_get_toc to find title_ids, then this tool to read the matching section. Example: shamela_get_book_section({book_id:<id>, title_id:<title_id from get_toc>}).",
             inputSchema: getBookSectionInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
@@ -470,7 +509,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "تفاسير آية",
             description:
-                "Given a Qur'anic verse, list every tafsir book in the catalog that has a page commenting on it. Uses Shamela's pre-built service/tafseer.db join. Pass either aya_id (1..6236) OR surah+aya. By default returns only books the user has downloaded locally (downloaded_only=true) — set to false to see the full catalog of tafsirs that COULD comment on this verse if downloaded. Each result has book_id, book_name, author_name, page_id, downloaded flag. Pair with shamela_get_page(book_id, page_id) to read the actual tafsir text.",
+                "Given a Qur'anic verse, list every tafsir book in the catalog that has a page commenting on it. Uses Shamela's pre-built service/tafseer.db join. Pass either aya_id (1..6236) OR surah+aya. By default returns only books the user has downloaded locally (downloaded_only=true) — set to false to see the full catalog of tafsirs that COULD comment on this verse if downloaded. Each result has book_id, book_name, author_name, page_id, downloaded flag. Pair with shamela_get_page(book_id, page_id) to read the actual tafsir text. NOTE: this uses a CURATED service index that may omit downloaded tafsirs (many tafsirs carry no per-page aya markers) — on some installs it returns only al-Tabari. For the user's full tafsir picture, also list downloaded books in the tafsir categories via shamela_list_downloaded_books(category_id=3) and (category_id=4); see coverage_note in the result.",
             inputSchema: getTafseerOfAyaInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
@@ -508,14 +547,14 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "قائمة الكتب المنزَّلة",
             description:
-                "List the books actually downloaded on this user's machine (master.db.book.major_ondisk > 0). Returns book_id, book_name, author_name, category, book_date for each. Crucial for honest research scoping: shamela_search_pages only returns hits from downloaded books, so this tool tells the LLM what's actually searchable. Paginated via limit/offset. Example: shamela_list_downloaded_books({limit:50}) → all downloaded books on this install.",
+                "List the books actually downloaded on this user's machine (master.db.book.major_ondisk > 0). Returns book_id, book_name, author_name, category, book_date for each. Crucial for honest research scoping: shamela_search_pages only returns hits from downloaded books, so this tool tells the LLM what's actually searchable. Paginated via limit/offset. Pass `category_id` to restrict to one category. Each book reports content_status ('readable' vs 'downloaded_no_pages' = flagged but text not openable), and the response includes library_by_category — the distribution of the whole downloaded library across categories. Example: shamela_list_downloaded_books({limit:50}) → all downloaded books; shamela_list_downloaded_books({category_id:17}) → only الفقه الحنبلي.",
             inputSchema: listDownloadedBooksInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
         async (args) => {
             try {
                 const b = await getBackend();
-                const r = runListDownloadedBooks(b.catalog, args as Parameters<typeof runListDownloadedBooks>[1]);
+                const r = await runListDownloadedBooks(b.catalog, b.pages, args as Parameters<typeof runListDownloadedBooks>[2]);
                 return r as unknown as ToolResult;
             } catch (e) { return wrapErr(e); }
         },
@@ -559,6 +598,228 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         },
     );
 
+    // ----------- 21. shamela_search_phrase -----------
+    server.registerTool(
+        "shamela_search_phrase",
+        {
+            title: "بحث بالعبارة والتقارب",
+            description:
+                "Exact-phrase and proximity search the regular search lacks. mode='phrase' matches the query words as a CONSECUTIVE phrase (e.g. «خيار المجلس» only where those two words are adjacent). mode='near' matches pages where the words occur within `distance` words of each other in any order (e.g. «بيع» near «قبض» within 5 words) — ideal for fiqh questions where related terms sit close but not adjacent. Two-stage: finds candidate pages where all words co-occur, then verifies adjacency/proximity in the full page text. Pass `scope` (book_ids/author_ids/category_ids) to cover large libraries reliably. Returns book name, author, printed page, and a snippet. Examples: shamela_search_phrase({query:'خيار المجلس'}), shamela_search_phrase({query:'بيع قبض', mode:'near', distance:5, scope:{category_ids:[17]}}).",
+            inputSchema: searchPhraseInputShape,
+            annotations: COMMON_ANNOTATIONS,
+        },
+        async (args) => {
+            try {
+                const b = await getBackend();
+                const r = await runSearchPhrase(b.helper, b.catalog, b.pages, args as Parameters<typeof runSearchPhrase>[3]);
+                return r as unknown as ToolResult;
+            } catch (e) { return wrapErr(e); }
+        },
+    );
+
+    // ----------- 22. shamela_search_hadith -----------
+    server.registerTool(
+        "shamela_search_hadith",
+        {
+            title: "بحث عن حديث بنصه",
+            description:
+                "Find a hadith by its TEXT (not its numeric key). Text-searches the downloaded library (matn + footnotes), reads each matching page's service annotations for hadith keys, then resolves each key's cross-collection takhrij via hadeeth.db. Returns matched pages (snippets often show the printed takhrij «رواه البخاري ومسلم») plus cross-book takhrij where service keys exist. Note: fiqh/usul libraries frequently lack service keys on cited-hadith pages — the snippets still carry the printed takhrij. Example: shamela_search_hadith({query:'إنما الأعمال بالنيات'}).",
+            inputSchema: searchHadithInputShape,
+            annotations: COMMON_ANNOTATIONS,
+        },
+        async (args) => {
+            try {
+                const b = await getBackend();
+                const r = await runSearchHadith(b.helper, b.catalog, b.pages, b.services, args as Parameters<typeof runSearchHadith>[4]);
+                return r as unknown as ToolResult;
+            } catch (e) { return wrapErr(e); }
+        },
+    );
+
+    // ----------- 23. shamela_health -----------
+    server.registerTool(
+        "shamela_health",
+        {
+            title: "فحص خادم الشاملة",
+            description:
+                "Self-diagnostics. Returns server version, catalog/author/category counts, downloaded-book count, and a spot-check that the first downloaded book has readable pages. Reaching this tool at all proves the backend booted; the spot-check separates 'server fine' from 'library path / content problems'. Use it FIRST when Shamela tools seem missing, empty, or erroring. Cheap and read-only.",
+            inputSchema: healthInputShape,
+            annotations: COMMON_ANNOTATIONS,
+        },
+        async (args) => {
+            try {
+                const b = await getBackend();
+                const r = await runHealth(b.catalog, b.pages, args as Parameters<typeof runHealth>[2]);
+                return r as unknown as ToolResult;
+            } catch (e) { return wrapErr(e); }
+        },
+    );
+
+    // ----------- 24. shamela_search_exact -----------
+    server.registerTool(
+        "shamela_search_exact",
+        {
+            title: "بحث مطابق مع التشكيل والهمزات والأرقام",
+            description:
+                "Exactness-preserving search the regular search cannot do: it honors diacritics (التشكيل), hamza/alef forms (ٱآأإ vs bare ا, plus ؤ ئ ء ى ة), and digit systems (Arabic-Indic ٠-٩ vs Western 0-9). shamela_search_pages folds all of these away (preserve_* return OPTION_NOT_SUPPORTED). Two-stage, no index change: (1) normalized AND-search gathers candidates; (2) each candidate's FULL raw SQLite text is verified in Node, folding ONLY the features you did NOT ask to preserve. Type the query WITH the diacritics/hamza/digits to enforce; enable at least one flag in `preserve`. Broad searches may miss matches outside the bounded candidate window (`candidate_cap_hit`/`total_candidates_scanned` report it) — pass `scope` for large libraries. Examples: shamela_search_exact({query:'أحمد', preserve:{preserve_hamza:true}}) won't match «احمد»; shamela_search_exact({query:'عِلْم', preserve:{preserve_diacritics:true}}) won't match «عَلَم».",
+            inputSchema: searchExactInputShape,
+            annotations: COMMON_ANNOTATIONS,
+        },
+        async (args) => {
+            try {
+                const b = await getBackend();
+                const r = await runSearchExact(b.helper, b.catalog, b.pages, args as Parameters<typeof runSearchExact>[3]);
+                return r as unknown as ToolResult;
+            } catch (e) { return wrapErr(e); }
+        },
+    );
+
+    // ----------- 25. shamela_search_boolean -----------
+    server.registerTool(
+        "shamela_search_boolean",
+        {
+            title: "بحث منطقي (و/أو/دون)",
+            description:
+                "Boolean search the AND-only regular search lacks — combines OR (any_of) and NOT (none_of) with AND (all_of). `all_of`: terms that must ALL appear (intersection). `any_of`: at least ONE must appear (union), intersected with all_of. `none_of`: pages containing ANY of these are excluded. At least one of all_of/any_of is required. Node-only set algebra over per-term AND-sub-searches: ((∩ all_of) ∩ (∪ any_of)) \\ (∪ none_of) on hit ids. Each sub-search returns a CAPPED window, so this is best-effort — `candidate_cap_hit` flags a capped term, `none_of_within_window` flags window-only exclusion, `subqueries[]` reports each term. STRONGLY prefer `scope` (an unscoped boolean over a large library is unreliable). Examples: shamela_search_boolean({all_of:['الوقف'], any_of:['المسجد','المقبرة'], none_of:['البيع'], scope:{category_ids:[17]}}).",
+            inputSchema: searchBooleanInputShape,
+            annotations: COMMON_ANNOTATIONS,
+        },
+        async (args) => {
+            try {
+                const b = await getBackend();
+                const r = await runSearchBoolean(b.helper, b.catalog, b.pages, args as Parameters<typeof runSearchBoolean>[3]);
+                return r as unknown as ToolResult;
+            } catch (e) { return wrapErr(e); }
+        },
+    );
+
+    // ----------- 26. shamela_root_stats -----------
+    server.registerTool(
+        "shamela_root_stats",
+        {
+            title: "انتشار جذر في المكتبة",
+            description:
+                "Profile how widely an Arabic root spreads across the DOWNLOADED library, aggregated by category / Hijri century / book / author. Runs ONE morphological (AlKhalil) page search for the root — all derived forms are counted (صابر/يصبر/اصطبار for صبر) — and returns the DISTRIBUTION only, not snippets. `total_hits` is EXACT; the by-category/century/book/author breakdown is built from at most 5,000 top-scoring hits (COVERAGE_CAP), so when `coverage_capped` is true the bucket counts are floors and shares are indicative. Morphology accuracy on classical Arabic is ~0.80 — read counts as reach, not exact tallies. Pass `scope` to profile a slice. Examples: shamela_root_stats({root:'صبر'}), shamela_root_stats({root:'رحم', scope:{category_ids:[17]}}).",
+            inputSchema: rootStatsInputShape,
+            annotations: COMMON_ANNOTATIONS,
+        },
+        async (args) => {
+            try {
+                const b = await getBackend();
+                const r = await runRootStats(b.helper, b.catalog, args as Parameters<typeof runRootStats>[2]);
+                return r as unknown as ToolResult;
+            } catch (e) { return wrapErr(e); }
+        },
+    );
+
+    // ----------- 27. shamela_books_by_period -----------
+    server.registerTool(
+        "shamela_books_by_period",
+        {
+            title: "كتب حسب المدة (تأليفًا ووفاةً)",
+            description:
+                "Catalog filter that keeps the TWO temporal dimensions DISTINCT (unlike scope.period_*, which conflates them). composed_from/composed_to bound the BOOK's composition year (book.book_date); died_from/died_to bound the MAIN AUTHOR's death year. A book matches only if it satisfies ALL provided constraints at once (composition-year AND death-year AND category AND downloaded) — an intersection, never a union. At least one of the four bounds is required. Also accepts category_id, downloaded_only, limit/offset. Returns book_id, book_name, main author + death_year, book_date, category, downloaded flag, and a ready-to-use book_ids[] to pass as scope.book_ids. Use when a question distinguishes 'books composed in a period' from 'books by authors who died in a period' — e.g. died_from:700, died_to:800 for 8th-century-Hijri authors.",
+            inputSchema: booksByPeriodInputShape,
+            annotations: COMMON_ANNOTATIONS,
+        },
+        async (args) => {
+            try {
+                const b = await getBackend();
+                const r = runBooksByPeriod(b.catalog, args as Parameters<typeof runBooksByPeriod>[1]);
+                return r as unknown as ToolResult;
+            } catch (e) { return wrapErr(e); }
+        },
+    );
+
+    // ----------- Resources (attachable catalogs/schema) -----------
+    server.registerResource(
+        "categories",
+        "shamela://categories",
+        { title: "تصنيفات المكتبة", description: "تصنيفات الشاملة الـ41 مع عدد الكتب.", mimeType: "application/json" },
+        async (uri) => {
+            const b = await getBackend();
+            const r = runListCategories(b.catalog, listCategoriesInput.parse({ include_counts: true, response_format: "json" }));
+            return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(r.structuredContent, null, 2) }] };
+        },
+    );
+    server.registerResource(
+        "downloaded",
+        "shamela://downloaded",
+        { title: "الكتب المنزَّلة", description: "الكتب المنزَّلة فعليًّا على هذا الجهاز (المتاحة للبحث).", mimeType: "application/json" },
+        async (uri) => {
+            const b = await getBackend();
+            const tally = new Map<number, number>();
+            const books = Array.from(b.catalog.downloadedBookIds()).map((id) => {
+                const rec = b.catalog.bookRecord(id);
+                const cid = rec?.book_category ?? -1;
+                tally.set(cid, (tally.get(cid) ?? 0) + 1);
+                return {
+                    book_id: id,
+                    book_name: rec?.book_name ?? null,
+                    author_name: rec ? b.catalog.mainAuthorName(rec) : null,
+                    category_id: rec?.book_category ?? null,
+                    category: rec ? b.catalog.categoryPath(rec.book_category)[0] ?? null : null,
+                    book_date: rec?.book_date ?? null,
+                };
+            });
+            const by_category = Array.from(tally.entries())
+                .map(([cid, count]) => ({
+                    category_id: cid >= 0 ? cid : null,
+                    category_name: cid >= 0 ? b.catalog.category(cid)?.category_name ?? String(cid) : null,
+                    count,
+                }))
+                .sort((x, y) => y.count - x.count);
+            return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ total: books.length, by_category, books }, null, 2) }] };
+        },
+    );
+    server.registerResource(
+        "schema",
+        "shamela://schema",
+        { title: "مخطط بيانات الشاملة", description: "وصف موجز لبنية بيانات الشاملة للمطوّرين.", mimeType: "text/markdown" },
+        async (uri) => ({ contents: [{ uri: uri.href, mimeType: "text/markdown", text: SHAMELA_SCHEMA_DOC }] }),
+    );
+    server.registerResource(
+        "status",
+        "shamela://status",
+        { title: "حالة خادم الشاملة", description: "فحص ذاتي: النسخة والعدّادات وقابلية القراءة (المقترح 13).", mimeType: "application/json" },
+        async (uri) => {
+            const b = await getBackend();
+            const r = await runHealth(b.catalog, b.pages, healthInput.parse({ response_format: "json" }));
+            return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(r.structuredContent, null, 2) }] };
+        },
+    );
+
+    // ----------- Prompts (guided study workflows) -----------
+    server.registerPrompt(
+        "study_masala",
+        { title: "دراسة مسألة فقهية", description: "خطة دراسة مسألة فقهية بسلسلة أدوات الشاملة.", argsSchema: { masala: z.string().describe("المسألة الفقهية المراد دراستها.") } },
+        ({ masala }) => ({
+            messages: [{ role: "user", content: { type: "text", text:
+                `ادرس المسألة الفقهية: «${masala}» باستخدام أدوات المكتبة الشاملة، بالخطوات:\n` +
+                `1) ابحث بالعبارة/التقارب (shamela_search_phrase) عن ألفاظ المسألة، وضيّق النطاق بالتصنيف عند الحاجة.\n` +
+                `2) اقرأ المواضع المهمة كاملةً (shamela_get_page / shamela_get_book_section) لئلا يُبتر السياق.\n` +
+                `3) ميّز المتن عن الحاشية، ولا تنسب الحاشية للمصنّف.\n` +
+                `4) وثّق كل نقل بإحالة (shamela_get_citation) مصرّحًا بحال الترقيم.\n` +
+                `5) لخّص الأقوال وأدلتها مع عزو كل قول لمصدره.` } }],
+        }),
+    );
+    server.registerPrompt(
+        "compare_madhahib",
+        { title: "مقارنة المذاهب", description: "مقارنة أقوال المذاهب في مسألة.", argsSchema: { masala: z.string().describe("المسألة المراد مقارنة المذاهب فيها.") } },
+        ({ masala }) => ({
+            messages: [{ role: "user", content: { type: "text", text:
+                `قارن أقوال المذاهب الفقهية في: «${masala}». لكل مذهب: ابحث في كتبه (ضيّق النطاق بتصنيف المذهب أو بكتب بعينها)، وانقل القول بنصه مع إحالته، ثم اجمع المقارنة في جدول: المذهب | القول | الدليل | المصدر. ولا تنسب قولًا بلا أداةٍ تثبته.` } }],
+        }),
+    );
+    server.registerPrompt(
+        "trace_hadith",
+        { title: "تخريج حديث", description: "تخريج حديث بنصه عبر الكتب المنزّلة.", argsSchema: { text: z.string().describe("نص الحديث أو طرفه.") } },
+        ({ text }) => ({
+            messages: [{ role: "user", content: { type: "text", text:
+                `خرّج الحديث: «${text}» باستخدام shamela_search_hadith للعثور على مواضعه ومفاتيحه وتخريجه عبر الكتب، ثم اعرض: المواضع، والتخريج عبر الكتب المنزّلة، وما ظهر من تخريجٍ مطبوع في الحواشي (رواه فلان...). وصرّح بأن النتائج من الكتب المنزّلة فقط.` } }],
+        }),
+    );
+
     void z;
     return server;
 }
@@ -574,7 +835,15 @@ async function main(): Promise<void> {
     const server = createServer(getBackend);
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    logInfo(`shamela-mcp v${VERSION} ready (20 tools registered)`);
+    logInfo(`shamela-mcp v${VERSION} ready (27 tools + 4 resources + 3 prompts registered)`);
+
+    // Cold-start fix (#14): warm the JVM + indexes right after the MCP
+    // handshake (not on first tool call). Non-blocking — the handshake already
+    // completed above, so a slow warm-up never trips the client's init timeout;
+    // if it fails, the next tool call falls back to lazy init.
+    void getBackend()
+        .then(() => logInfo("backend warmed (JVM + indexes ready)"))
+        .catch((e) => logInfo(`warm-up deferred to first call: ${formatErrorMessage(e)}`));
 
     const shutdown = () => {
         backend?.helper.close();
@@ -621,7 +890,13 @@ export type {
     ResolveOutput,
     SearchAuthorsOutput,
     SearchBooksOutput,
+    SearchHadithOutput,
     SearchPagesOutput,
+    SearchPhraseOutput,
     SearchQuranOutput,
     SearchTitlesOutput,
+    SearchExactOutput,
+    SearchBooleanOutput,
+    RootStatsOutput,
+    BooksByPeriodOutput,
 };

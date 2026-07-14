@@ -1,8 +1,10 @@
 import { z } from "zod";
 
 import type { Catalog } from "../catalog.js";
+import { MULTIPAGE_CHAR_BUDGET } from "../constants.js";
 import { bookNotDownloaded, bookNotFound } from "../errors.js";
 import type { Helper } from "../helper.js";
+import { trimPagesByBudget } from "../longtext.js";
 import type { PageStore } from "../pages.js";
 import { ResponseFormatInput } from "../schemas.js";
 import { arabize, header, renderResponse, type RenderedResponse } from "../format.js";
@@ -32,6 +34,9 @@ export interface GetPagesRangeOutput {
     start_page_id: number;
     count: number;
     has_more: boolean;
+    next_start_page_id: number | null;
+    /** Display advice when the range was cut short to stay within the char budget. */
+    _display: string | null;
     pages: RangePage[];
 }
 
@@ -59,7 +64,7 @@ export async function runGetPagesRange(
 
     const stripIfHtml = (s: string) => (args.keep_html ? s : s.replace(HTML_TAG_RE, "").replace(/\r/g, "\n"));
 
-    const pagesOut: RangePage[] = await Promise.all(
+    const allPages: RangePage[] = await Promise.all(
         rows.map(async (r) => {
             const c = contentMap.get(r.page_id) ?? { body: "", foot: "", comment: "" };
             const printed = await pages.printedPage(args.book_id, r.page_id);
@@ -73,14 +78,25 @@ export async function runGetPagesRange(
             };
         }),
     );
-    const lastId = pageIds.length ? pageIds[pageIds.length - 1]! : args.start_page_id - 1;
+
+    // #16 — stop early when the bodies are large, so a 20-page range of
+    // long pages doesn't dump. The requested page count is still the upper bound.
+    const { kept: pagesOut, trimmed } = trimPagesByBudget(allPages, MULTIPAGE_CHAR_BUDGET);
+    const lastId = pagesOut.length ? pagesOut[pagesOut.length - 1]!.page_id : args.start_page_id - 1;
+    const hasMore = lastId < total;
+    const display = trimmed
+        ? `النطاق طويل، فاقتُصِر على ${arabize(pagesOut.length)} صفحة (من ${arabize(allPages.length)} مطلوبة) لضبط الحجم. أكمِل بـ start_page_id=${lastId + 1}.`
+        : null;
+
     const out: GetPagesRangeOutput = {
         book_id: args.book_id,
         book_name: rec.book_name,
         author_name: catalog.mainAuthorName(rec),
         start_page_id: args.start_page_id,
         count: pagesOut.length,
-        has_more: lastId < total,
+        has_more: hasMore,
+        next_start_page_id: hasMore ? lastId + 1 : null,
+        _display: display,
         pages: pagesOut,
     };
     return renderResponse(out, args.response_format, (data) => {
@@ -91,7 +107,8 @@ export async function runGetPagesRange(
             if (p.body) lines.push(p.body);
             if (p.foot) lines.push("", `_${p.foot}_`);
         }
-        if (data.has_more) lines.push("", `*للمزيد، استخدم \`start_page_id=${lastId + 1}\`.*`);
+        if (data._display) lines.push("", `> *${data._display}*`);
+        else if (data.has_more) lines.push("", `*للمزيد، استخدم \`start_page_id=${data.next_start_page_id}\`.*`);
         return lines.join("\n");
     });
 }
