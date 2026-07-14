@@ -2,7 +2,7 @@
  * Shared constants. Per `docs/architecture.md` and the mcp-builder Node guide.
  */
 
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.2";
 
 /** Maximum response size in characters before truncation. mcp-builder default. */
 export const CHARACTER_LIMIT = 25_000;
