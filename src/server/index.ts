@@ -838,37 +838,66 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
     );
 
     // ----------- Prompts (guided study workflows) -----------
+    // Single source of truth: each template below must stay byte-identical
+    // (with `${arg}` placeholders) to its `text` entry in manifest.json —
+    // the integration suite asserts this to prevent the two copies drifting.
     server.registerPrompt(
         "study_masala",
-        { title: "دراسة مسألة فقهية", description: "خطة دراسة مسألة فقهية بسلسلة أدوات الشاملة.", argsSchema: { masala: z.string().describe("المسألة الفقهية المراد دراستها.") } },
+        { title: "دراسة مسألة فقهية", description: "خطة دراسة مسألة فقهية بسلسلة أدوات الشاملة.", argsSchema: { masala: z.string().describe("المسألة الفقهية المراد دراستها. مثال: حكم سجود السهو لمن شك في عدد الركعات") } },
         ({ masala }) => ({
             messages: [{ role: "user", content: { type: "text", text:
-                `ادرس المسألة الفقهية: «${masala}» باستخدام أدوات المكتبة الشاملة، بالخطوات:\n` +
-                `1) ابحث بالعبارة/التقارب (shamela_search_phrase) عن ألفاظ المسألة، وضيّق النطاق بالتصنيف عند الحاجة.\n` +
-                `2) اقرأ المواضع المهمة كاملةً (shamela_get_page / shamela_get_book_section) لئلا يُبتر السياق.\n` +
-                `3) ميّز المتن عن الحاشية، ولا تنسب الحاشية للمصنّف.\n` +
-                `4) وثّق كل نقل بإحالة (shamela_get_citation) مصرّحًا بحال الترقيم.\n` +
-                `5) لخّص الأقوال وأدلتها مع عزو كل قول لمصدره.` } }],
+                `ادرس المسألة الفقهية: «${masala}» بأدوات المكتبة الشاملة، بالخطوات: (1) حدّد مظانّ المسألة: اعرف التصنيف المناسب من shamela_list_categories وضيّق به النطاق، وابحث بالعبارة (shamela_search_phrase) وبتوليفات ألفاظها عند اختلاف الصيغ (shamela_search_boolean). (2) للوصول من جهة الأبواب استعمل shamela_get_toc على كتب الفقه المظنونة ثم اقرأ الباب بـ shamela_get_book_section مع متابعة next_start_page_id، واقرأ المواضع المهمة كاملةً بـ shamela_get_page لئلا يُبتر السياق. (3) ميّز المتن عن الحاشية ولا تنسب الحاشية للمصنّف، ووثّق كل نقل بإحالة shamela_get_citation مصرّحًا بحال الترقيم. (4) لخّص الأقوال وأدلتها مع عزو كل قول لمصدره، وصرّح بأن البحث مقصور على الكتب المنزّلة فلا يُعدّ غياب النتيجة نفيًا للقول.` } }],
         }),
     );
     server.registerPrompt(
         "compare_madhahib",
-        { title: "مقارنة المذاهب", description: "مقارنة أقوال المذاهب في مسألة.", argsSchema: { masala: z.string().describe("المسألة المراد مقارنة المذاهب فيها.") } },
+        { title: "مقارنة المذاهب", description: "مقارنة أقوال المذاهب الفقهية في مسألة عبر كتب كل مذهب المنزّلة.", argsSchema: { masala: z.string().describe("المسألة المراد مقارنة المذاهب فيها. مثال: نقض الوضوء بمس المرأة") } },
         ({ masala }) => ({
             messages: [{ role: "user", content: { type: "text", text:
-                `قارن أقوال المذاهب الفقهية في: «${masala}». لكل مذهب: ابحث في كتبه (ضيّق النطاق بتصنيف المذهب أو بكتب بعينها)، وانقل القول بنصه مع إحالته، ثم اجمع المقارنة في جدول: المذهب | القول | الدليل | المصدر. ولا تنسب قولًا بلا أداةٍ تثبته.` } }],
+                `قارن أقوال المذاهب الفقهية في: «${masala}»، بالخطوات: (1) حدّد كتب كل مذهب المنزّلة بـ shamela_list_downloaded_books مقيّدةً بتصنيف المذهب (تعرفه من shamela_list_categories). (2) ابحث في كتب كل مذهب على حدة بـ shamela_search_phrase — وبـ shamela_search_boolean عند تعدد الألفاظ — مقيّدًا النطاق بالتصنيف أو بمعرّفات الكتب. (3) اقرأ الموضع بسياقه (shamela_get_page) وانقل القول بنصه مميّزًا المتن من الحاشية، مع إحالة shamela_get_citation، مرتّبًا مصادر كل مذهب بوفيات مؤلفيها (من shamela_get_book). (4) اجمع المقارنة في جدول: المذهب | القول | الدليل | المصدر. ولا تنسب قولًا بلا أداةٍ تثبته؛ وإن غاب مذهبٌ فصرّح بأن كتبه قد لا تكون منزّلة ولا يُعدّ ذلك نفيًا لقوله.` } }],
         }),
     );
     server.registerPrompt(
         "trace_hadith",
-        { title: "تخريج حديث", description: "تخريج حديث بنصه عبر الكتب المنزّلة.", argsSchema: { text: z.string().describe("نص الحديث أو طرفه.") } },
+        { title: "تخريج حديث", description: "تخريج حديث بنصه عبر الكتب المنزّلة مع تتبع مفاتيحه.", argsSchema: { text: z.string().describe("نص الحديث أو طرفه. مثال: إنما الأعمال بالنيات") } },
         ({ text }) => ({
             messages: [{ role: "user", content: { type: "text", text:
-                `خرّج الحديث: «${text}» باستخدام shamela_search_hadith للعثور على مواضعه ومفاتيحه وتخريجه عبر الكتب، ثم اعرض: المواضع، والتخريج عبر الكتب المنزّلة، وما ظهر من تخريجٍ مطبوع في الحواشي (رواه فلان...). وصرّح بأن النتائج من الكتب المنزّلة فقط.` } }],
+                `خرّج الحديث: «${text}»، بالخطوات: (1) ابحث بـ shamela_search_hadith عن مواضعه ومفاتيحه وتخريجه عبر الكتب، وللمطابقة الحرفية للفظ المتن استعن بـ shamela_search_exact. (2) وسّع تتبّع كل مفتاح حديثٍ ظهر بـ shamela_get_books_for_hadith لبيان بقية مواضعه في الكتب المنزّلة. (3) اعرض: المواضع، والتخريج عبر الكتب، وما في الحواشي من تخريج مطبوع (رواه فلان…) منسوبًا للمحقق لا للمصنّف، مع إحالة shamela_get_citation لكل موضع. (4) صرّح بأن التخريج من الكتب المنزّلة فقط.` } }],
+        }),
+    );
+    server.registerPrompt(
+        "tafsir_aya_muqaran",
+        { title: "مقارنة تفاسير آية", description: "جمع تفسير آية من عدة تفاسير منزّلة مرتّبةً بوفيات المفسرين.", argsSchema: { aya: z.string().describe("السورة ورقم الآية، أو نص الآية أو طرفها. مثال: البقرة 255") } },
+        ({ aya }) => ({
+            messages: [{ role: "user", content: { type: "text", text:
+                `فسّر الآية: «${aya}» من عدة تفاسير منزّلة، بالخطوات: (1) حدّد الآية: إن أُعطي نصُّها فابحث بـ shamela_search_quran، ثم اجلب نصها بالرسمين بـ shamela_get_aya. (2) اعرف تغطية تفاسيرك المنزّلة لها بـ shamela_list_tafsirs_for_aya — لا تكتفِ بـ shamela_get_tafseer_of_aya ذات الفهرس المنتقى — ولا تَعُدّ غياب كتابٍ دليلًا على أنه لا يفسّرها. (3) اجلب النصوص المفهرسة دفعةً واحدة بـ shamela_get_tafseer_texts، وإن طال نصٌّ فاعرضه على أجزاء. (4) اعرض التفاسير مرتّبةً بوفيات المفسرين مع إحالة shamela_get_citation لكل نقل، وصرّح بأن المقارنة مقصورة على التفاسير المنزّلة.` } }],
+        }),
+    );
+    server.registerPrompt(
+        "tawthiq_nisba",
+        { title: "توثيق نسبة قول", description: "توثيق نسبة قول أو بيت أو حكمة إلى قائله بتتبع أقدم مصادره.", argsSchema: { qawl: z.string().describe("نص القول أو البيت أو الحكمة المراد توثيق نسبته. مثال: من عرف نفسه عرف ربه") } },
+        ({ qawl }) => ({
+            messages: [{ role: "user", content: { type: "text", text:
+                `وثّق نسبة هذا القول: «${qawl}»، بالخطوات: (1) ابحث عنه حرفيًّا بـ shamela_search_phrase، ثم بالمطابقة الدقيقة بـ shamela_search_exact لتمييز الصيغ (الهمزات والتشكيل)، ثم بالتقارب اللفظي للصيغ القريبة. (2) لكل موضع: اعرف قِدَم المصدر بـ shamela_get_book (وفاة المؤلف)، واقرأ السياق بـ shamela_get_page لفحص صيغة العزو (قال فلان / يُروى / بلا عزو)، مميّزًا المتن من الحاشية. (3) رتّب المصادر زمنيًّا وبيّن: أقدم من أورده، وبأي لفظ، ومنسوبًا لمن، مع إحالة shamela_get_citation لكل موضع. (4) إن لم تجده فصرّح بأن النفي مقصور على الكتب المنزّلة لا نفيٌ مطلق.` } }],
+        }),
+    );
+    server.registerPrompt(
+        "tatabbu_mustalah",
+        { title: "تتبع مصطلح عبر القرون", description: "رصد أول ورود مصطلح علمي وتطور دلالته وشيوعه عبر القرون.", argsSchema: { term: z.string().describe("المصطلح العلمي المراد تتبعه. مثال: الاستحسان") } },
+        ({ term }) => ({
+            messages: [{ role: "user", content: { type: "text", text:
+                `تتبّع المصطلح: «${term}» عبر القرون، بالخطوات: (1) اعرف انتشار جذره موزَّعًا على القرون والتصنيفات بـ shamela_root_stats، وصرّح بأن التوزيع تقريبي مأخوذ من أعلى النتائج. (2) لكل قرن مستهدف: استخرج كتبه المنزّلة بـ shamela_books_by_period (المعوَّل وفيات المؤلفين لا سنوات الطبع)، ثم ابحث عن المصطلح فيها بـ shamela_search_exact أو shamela_search_pages مقيّدًا بمعرّفات كتب القرن. (3) اقرأ مواضع مفتاحية من كل قرن بـ shamela_get_page لرصد تطور الدلالة، مميّزًا المتن من الحاشية. (4) اعرض جدولًا زمنيًّا: القرن | أبرز المواضع | الدلالة | الإحالة (shamela_get_citation)، وصرّح بأن التتبع مقصور على الكتب المنزّلة.` } }],
+        }),
+    );
+    server.registerPrompt(
+        "tarjamat_alim",
+        { title: "ترجمة عالم", description: "جمع ترجمة عالم من فهرس الشاملة وكتب التراجم المنزّلة ببنية معيارية.", argsSchema: { alim: z.string().describe("اسم العالم أو شهرته. مثال: ابن قدامة المقدسي") } },
+        ({ alim }) => ({
+            messages: [{ role: "user", content: { type: "text", text:
+                `ترجم للعالم: «${alim}»، بالخطوات: (1) حدّده في الفهرس بـ shamela_search_authors — وجرّب صيغ اسمه: الكنية والنسبة والشهرة — ثم اجلب ترجمة الفهرس وقائمة كتبه وحال تنزيلها بـ shamela_get_author. (2) ابحث عن أخباره في كتب التراجم والطبقات المنزّلة بـ shamela_search_pages باسمه وكناه مقيّدًا بتصنيفات التراجم (من shamela_list_categories)، واقرأ المواضع المهمة بـ shamela_get_page. (3) اجمع الترجمة ببنية ثابتة: الاسم والنسب | المولد | الشيوخ | التلاميذ | المصنفات | أقوال العلماء فيه | الوفاة، ولا تُثبت فيها إلا ما جاء من نتائج الأدوات، مع إحالة shamela_get_citation لكل خبر. (4) ميّز المتن من الحاشية، وصرّح بأن الترجمة مجموعة من فهرس الشاملة والكتب المنزّلة فقط.` } }],
         }),
     );
 
-    void z;
     return server;
 }
 
@@ -898,7 +927,7 @@ async function main(): Promise<void> {
     const server = createServer(getBackend);
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    logInfo(`shamela-mcp v${VERSION} ready (29 tools + 4 resources + 3 prompts registered)`);
+    logInfo(`shamela-mcp v${VERSION} ready (29 tools + 4 resources + 7 prompts registered)`);
 
     // Cold-start fix (#14): warm the JVM + indexes right after the MCP
     // handshake (not on first tool call). Non-blocking — the handshake already

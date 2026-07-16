@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -52,6 +55,16 @@ const EXPECTED_TOOL_NAMES = [
     "shamela_get_tafseer_texts",
 ] as const;
 
+const EXPECTED_PROMPT_NAMES = [
+    "study_masala",
+    "compare_madhahib",
+    "trace_hadith",
+    "tafsir_aya_muqaran",
+    "tawthiq_nisba",
+    "tatabbu_mustalah",
+    "tarjamat_alim",
+] as const;
+
 describe("MCP server end-to-end (InMemoryTransport)", () => {
     let client: Client;
     let backend: Backend;
@@ -86,6 +99,57 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
         for (const t of result.tools) {
             expect(t.title?.length ?? 0).toBeGreaterThan(0);
             expect(t.description?.length ?? 0).toBeGreaterThan(0);
+        }
+    });
+
+    it("lists all 7 expected prompts", async () => {
+        const result = await client.listPrompts();
+        const names = new Set(result.prompts.map((p) => p.name));
+        for (const expected of EXPECTED_PROMPT_NAMES) {
+            expect(names.has(expected), `expected prompt ${expected}`).toBe(true);
+        }
+        expect(result.prompts).toHaveLength(EXPECTED_PROMPT_NAMES.length);
+    });
+
+    it("each prompt exposes a non-empty title and description", async () => {
+        const result = await client.listPrompts();
+        for (const p of result.prompts) {
+            expect(p.title?.length ?? 0, `prompt ${p.name} title`).toBeGreaterThan(0);
+            expect(p.description?.length ?? 0, `prompt ${p.name} description`).toBeGreaterThan(0);
+        }
+    });
+
+    it("prompt templates match manifest.json exactly (single source of truth, no drift)", async () => {
+        const manifestPath = fileURLToPath(new URL("../../manifest.json", import.meta.url));
+        const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+            prompts: Array<{ name: string; description: string; arguments: string[]; text: string }>;
+        };
+        expect(manifest.prompts.map((p) => p.name).sort()).toEqual(
+            [...EXPECTED_PROMPT_NAMES].sort(),
+        );
+
+        const listed = await client.listPrompts();
+        for (const entry of manifest.prompts) {
+            // Manifest description must match the registered prompt's description.
+            const registered = listed.prompts.find((p) => p.name === entry.name);
+            expect(registered, `prompt ${entry.name} registered`).toBeDefined();
+            expect(registered!.description).toBe(entry.description);
+
+            // Rendering the prompt with a sentinel argument must reproduce the
+            // manifest template with its `${arg}` placeholder substituted.
+            expect(entry.arguments).toHaveLength(1);
+            const argName = entry.arguments[0]!;
+            const sentinel = "قيمة-اختبارية";
+            const rendered = await client.getPrompt({
+                name: entry.name,
+                arguments: { [argName]: sentinel },
+            });
+            expect(rendered.messages).toHaveLength(1);
+            const msg = rendered.messages[0]!;
+            expect(msg.role).toBe("user");
+            expect(msg.content.type).toBe("text");
+            const expected = entry.text.replaceAll("${" + argName + "}", sentinel);
+            expect((msg.content as { type: "text"; text: string }).text).toBe(expected);
         }
     });
 
