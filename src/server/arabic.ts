@@ -109,8 +109,13 @@ export function expandPrefixVariants(token: string): string[] {
     const bases = Array.from(new Set([t, withAl, core]));
     const out = new Set<string>();
     for (const b of bases) {
-        for (const p of PROCLITICS) out.add(p + b);
+        for (const p of PROCLITICS) {
+            // ل + ال contracts to لل in Arabic orthography — the raw
+            // concatenation (e.g. «لالصبر») never occurs in written text.
+            if (p === "ل" && b.startsWith("ال")) continue;
+            out.add(p + b);
+        }
     }
-    out.add("لل" + core); // لل + core
+    out.add("لل" + core); // لل + core (the contracted form)
     return Array.from(out).filter((s) => s.length >= 2);
 }

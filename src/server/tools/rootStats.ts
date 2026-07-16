@@ -31,7 +31,7 @@
 import { z } from "zod";
 
 import { CatalogScope, type Catalog } from "../catalog.js";
-import { COVERAGE_CAP } from "../constants.js";
+import { COVERAGE_CAP, UNDATED_BOOK_DATE, UNDATED_CENTURY_LABEL } from "../constants.js";
 import { emptyScope } from "../errors.js";
 import type { Helper } from "../helper.js";
 import { ResponseFormatInput, ScopeInputShape, type ScopeInputType } from "../schemas.js";
@@ -176,7 +176,13 @@ export async function runRootStats(
         }
         if (data.by_century.length) {
             lines.push(header(2, "حسب القرن الهجري"));
-            for (const c of data.by_century) lines.push(`- القرن ${arabize(c.name)}: ${arabize(c.count)}`);
+            for (const c of data.by_century) {
+                lines.push(
+                    c.name === UNDATED_CENTURY_LABEL
+                        ? `- ${c.name}: ${arabize(c.count)}`
+                        : `- القرن ${arabize(c.name)}: ${arabize(c.count)}`,
+                );
+            }
             lines.push("");
         }
         if (data.by_book.length) {
@@ -225,9 +231,11 @@ function enrichDistribution(raw: RawCoverage, catalog: Catalog) {
         const catName = catalog.categoryPath(rec.book_category)[0];
         if (catName) byCatMap.set(catName, (byCatMap.get(catName) ?? 0) + count);
 
-        if (rec.book_date) {
+        if (rec.book_date && rec.book_date !== UNDATED_BOOK_DATE) {
             const cen = String(Math.floor((rec.book_date - 1) / 100) + 1);
             byCenturyMap.set(cen, (byCenturyMap.get(cen) ?? 0) + count);
+        } else {
+            byCenturyMap.set(UNDATED_CENTURY_LABEL, (byCenturyMap.get(UNDATED_CENTURY_LABEL) ?? 0) + count);
         }
 
         const author = catalog.mainAuthorName(rec);
@@ -248,7 +256,14 @@ function enrichDistribution(raw: RawCoverage, catalog: Catalog) {
         .sort((a, b) => b.count - a.count);
     const byCentury: CountItem[] = Array.from(byCenturyMap.entries())
         .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => Number(a.name) - Number(b.name)); // chronological
+        .sort((a, b) => {
+            // chronological; the undated bucket (non-numeric) sorts last
+            const na = Number(a.name);
+            const nb = Number(b.name);
+            if (Number.isNaN(na)) return 1;
+            if (Number.isNaN(nb)) return -1;
+            return na - nb;
+        });
     const byAuthor: CountItem[] = Array.from(byAuthorMap.entries())
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)

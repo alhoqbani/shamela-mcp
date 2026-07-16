@@ -11,6 +11,7 @@ import {
     type ScopeInputType,
 } from "../schemas.js";
 import { arabize, header, renderResponse, type RenderedResponse } from "../format.js";
+import { UNDATED_BOOK_DATE, UNDATED_CENTURY_LABEL } from "../constants.js";
 
 // scope.book_ids isn't useful when searching the catalog; expose the rest.
 const SearchBooksScopeShape = {
@@ -108,9 +109,11 @@ export async function runSearchBooks(
         if (!rec) continue;
         const catName = catalog.categoryPath(rec.book_category)[0];
         if (catName) byCat[catName] = (byCat[catName] ?? 0) + c;
-        if (rec.book_date) {
+        if (rec.book_date && rec.book_date !== UNDATED_BOOK_DATE) {
             const cen = String(Math.floor((rec.book_date - 1) / 100) + 1);
             byCentury[cen] = (byCentury[cen] ?? 0) + c;
+        } else {
+            byCentury[UNDATED_CENTURY_LABEL] = (byCentury[UNDATED_CENTURY_LABEL] ?? 0) + c;
         }
     }
     const results: SearchBookHit[] = raw.results.map((h) => {

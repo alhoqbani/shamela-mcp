@@ -12,6 +12,7 @@ import {
     type ScopeInputType,
 } from "../schemas.js";
 import { arabize, header, renderResponse, type RenderedResponse } from "../format.js";
+import { UNDATED_BOOK_DATE, UNDATED_CENTURY_LABEL } from "../constants.js";
 
 export const searchPagesInputShape = {
     query: z.string().min(1).describe("Arabic search phrase. Multiple words are AND-combined; each can match in body or footnotes."),
@@ -190,9 +191,11 @@ function enrichCoverage(raw: RawCoverage, catalog: Catalog) {
         if (!rec) continue;
         const catName = catalog.categoryPath(rec.book_category)[0];
         if (catName) byCat[catName] = (byCat[catName] ?? 0) + count;
-        if (rec.book_date) {
+        if (rec.book_date && rec.book_date !== UNDATED_BOOK_DATE) {
             const cen = String(Math.floor((rec.book_date - 1) / 100) + 1);
             byCentury[cen] = (byCentury[cen] ?? 0) + count;
+        } else {
+            byCentury[UNDATED_CENTURY_LABEL] = (byCentury[UNDATED_CENTURY_LABEL] ?? 0) + count;
         }
         if (bookCnt < 10) {
             byBook[rec.book_name] = count;
