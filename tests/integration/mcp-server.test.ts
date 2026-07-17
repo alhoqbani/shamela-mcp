@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
-import { buildGuideText } from "../../src/server/guide.js";
+import { buildGuideSectionText, buildGuideText } from "../../src/server/guide.js";
 import { createServer, type Backend } from "../../src/server/index.js";
 import { FIXTURE_BOOK_ID, getBackend, getCatalog } from "../fixtures/shared.js";
 
@@ -54,6 +54,7 @@ const EXPECTED_TOOL_NAMES = [
     "shamela_books_by_period",
     "shamela_list_tafsirs_for_aya",
     "shamela_get_tafseer_texts",
+    "shamela_guide",
 ] as const;
 
 const EXPECTED_PROMPT_NAMES = [
@@ -63,6 +64,7 @@ const EXPECTED_PROMPT_NAMES = [
     "tafsir_aya_muqaran",
     "nazila_muasira",
     "khittat_bahth",
+    "daleel",
 ] as const;
 
 describe("MCP server end-to-end (InMemoryTransport)", () => {
@@ -85,7 +87,7 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
         await client.close();
     });
 
-    it("lists all 29 expected tools", async () => {
+    it("lists all 30 expected tools", async () => {
         const result = await client.listTools();
         const names = new Set(result.tools.map((t) => t.name));
         for (const expected of EXPECTED_TOOL_NAMES) {
@@ -102,7 +104,7 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
         }
     });
 
-    it("lists all 6 expected prompts", async () => {
+    it("lists all 7 expected prompts", async () => {
         const result = await client.listPrompts();
         const names = new Set(result.prompts.map((p) => p.name));
         for (const expected of EXPECTED_PROMPT_NAMES) {
@@ -191,6 +193,19 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
             ]);
         });
 
+        it("daleel.qism offers the four guide sections and defaults to الكل when omitted", async () => {
+            const r = await client.complete({
+                ref: { type: "ref/prompt", name: "daleel" },
+                argument: { name: "qism", value: "" },
+            });
+            expect(r.completion.values).toEqual(["الكل", "الأدوات", "القوالب", "النصائح"]);
+
+            const rendered = await client.getPrompt({ name: "daleel", arguments: {} });
+            const text = (rendered.messages[0]!.content as { type: "text"; text: string }).text;
+            expect(text).toContain("بقسم «الكل»");
+            expect(text).toContain("shamela_guide");
+        });
+
         it("optional arguments are declared optional and default when omitted", async () => {
             const listed = await client.listPrompts();
             const compare = listed.prompts.find((p) => p.name === "compare_madhahib")!;
@@ -241,7 +256,7 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
             expect(text).toBe(buildGuideText());
         });
 
-        it("drift guard: the guide names all 29 tools and all 6 prompts", () => {
+        it("drift guard: the guide names all 30 tools and all 7 prompts", () => {
             const text = buildGuideText();
             for (const toolName of EXPECTED_TOOL_NAMES) {
                 expect(text, `guide must mention tool ${toolName}`).toContain(toolName);
@@ -249,6 +264,53 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
             for (const promptName of EXPECTED_PROMPT_NAMES) {
                 expect(text, `guide must mention prompt ${promptName}`).toContain(promptName);
             }
+        });
+    });
+
+    describe("shamela_guide tool (in-conversation user guide)", () => {
+        it("default call returns the full guide text", async () => {
+            const r = (await client.callTool({
+                name: "shamela_guide",
+                arguments: {},
+            })) as CallResult;
+            expect(r.isError, errText(r)).toBeFalsy();
+            const sc = r.structuredContent as { section: string; text: string; notes: string[] };
+            expect(sc.section).toBe("الكل");
+            expect(sc.notes).toHaveLength(0);
+            expect(sc.text).toBe(buildGuideText());
+            // Markdown channel carries the guide verbatim.
+            expect(r.content[0]!.text).toBe(buildGuideText());
+        });
+
+        it("section=القوالب returns just the templates part (a proper subset)", async () => {
+            const r = (await client.callTool({
+                name: "shamela_guide",
+                arguments: { section: "القوالب" },
+            })) as CallResult;
+            expect(r.isError, errText(r)).toBeFalsy();
+            const sc = r.structuredContent as { section: string; text: string };
+            expect(sc.section).toBe("القوالب");
+            expect(sc.text).toBe(buildGuideSectionText("القوالب"));
+            // Contains the template names…
+            for (const p of EXPECTED_PROMPT_NAMES) {
+                expect(sc.text, `section must mention prompt ${p}`).toContain(p);
+            }
+            // …but not the tools section, and it is strictly smaller than the full guide.
+            expect(sc.text).not.toContain("shamela_search_pages");
+            expect(sc.text.length).toBeLessThan(buildGuideText().length);
+        });
+
+        it("unknown section falls back to the full guide with a note", async () => {
+            const r = (await client.callTool({
+                name: "shamela_guide",
+                arguments: { section: "قسم غير موجود" },
+            })) as CallResult;
+            expect(r.isError, errText(r)).toBeFalsy();
+            const sc = r.structuredContent as { section: string; text: string; notes: string[] };
+            expect(sc.section).toBe("الكل");
+            expect(sc.text).toBe(buildGuideText());
+            expect(sc.notes.length).toBeGreaterThanOrEqual(1);
+            expect(sc.notes[0]).toContain("قسم غير موجود");
         });
     });
 

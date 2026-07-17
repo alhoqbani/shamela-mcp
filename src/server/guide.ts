@@ -1,18 +1,23 @@
 /**
- * shamela://guide — in-app Arabic user guide («دليل استخدام الإضافة»).
+ * The in-app Arabic user guide («دليل استخدام الإضافة»), served two ways:
+ * as the shamela://guide resource (manual attachment) and as the
+ * shamela_guide tool (model-callable — resources cannot be fetched by the
+ * model itself, so the tool is the reliable in-conversation path).
  *
  * Ordinary users install the .mcpb and never visit the repository, so the
- * extension itself carries the user guide as an MCP resource. Pure text
- * assembly (no backend), exported as a function so the integration suite can
- * drift-guard it: the returned text must name all 29 tools and all 6 prompts.
+ * extension itself carries the user guide. Pure text assembly (no backend),
+ * exported as functions so the integration suite can drift-guard it: the
+ * returned text must name all 30 tools and all 7 prompts.
  *
  * Content rules: every tool/prompt line is grounded in its actual
  * manifest.json description — no invented capabilities.
  */
 
-/** Build the full Arabic markdown text of the user guide. */
-export function buildGuideText(): string {
-    return `# دليل استخدام إضافة «بحث ودراسة في المكتبة الشاملة»
+/** Top-level guide parts addressable via the shamela_guide `section` input. */
+export const GUIDE_SECTION_NAMES = ["الكل", "الأدوات", "القوالب", "النصائح"] as const;
+export type GuideSectionName = (typeof GUIDE_SECTION_NAMES)[number];
+
+const GUIDE_INTRO = `# دليل استخدام إضافة «بحث ودراسة في المكتبة الشاملة»
 
 ## مقدمة
 
@@ -22,9 +27,9 @@ export function buildGuideText(): string {
 - **قراءة فقط**: لا تعدِّل الإضافة على بيانات المكتبة أبدًا.
 - **أمانة النسبة**: لا يُنسب نصٌّ إلى كتاب إلا من نتيجة أداة، ويُميَّز المتنُ عن الحاشية، ويُصرَّح بالبيانات الناقصة دون اختلاق.
 
-لا تحتاج إلى حفظ أسماء الأدوات؛ اكتب طلبك بالعربية كما تخاطب باحثًا، وكلود يختار الأداة المناسبة. الأمثلة الآتية طلبات طبيعية تكتبها كما هي.
+لا تحتاج إلى حفظ أسماء الأدوات؛ اكتب طلبك بالعربية كما تخاطب باحثًا، وكلود يختار الأداة المناسبة. الأمثلة الآتية طلبات طبيعية تكتبها كما هي.`;
 
-## الأدوات التسع والعشرون
+const GUIDE_TOOLS = `## الأدوات الثلاثون
 
 ### أولًا: البحث في الكتب
 
@@ -100,12 +105,14 @@ export function buildGuideText(): string {
 - **\`shamela_books_by_period\`** — تصفية فهرس الكتب زمنيًّا مع التمييز بين سنة تأليف الكتاب وسنة وفاة مؤلفه الرئيس.
   مثال: «اعرض كتب المؤلفين الذين توفوا في القرن الثامن الهجري.»
 
-### سابعًا: التشخيص
+### سابعًا: التشخيص والدليل
 
 - **\`shamela_health\`** — فحص ذاتي: نسخة الخادم، وعدد كتب الفهرس والمنزَّل منها، وتحقق سريع من قابلية القراءة. استعمله أولًا إذا بدت الأدوات معطَّلة أو فارغة.
   مثال: «افحص إضافة الشاملة وتأكد أنها تعمل.»
+- **\`shamela_guide\`** — عرض دليل استخدام الإضافة (هذا الدليل) من داخل المحادثة، كاملًا أو قسمًا منه: الأدوات أو القوالب أو النصائح.
+  مثال: «ماذا تستطيع إضافة الشاملة أن تفعل؟»`;
 
-## القوالب الستة
+const GUIDE_PROMPTS = `## القوالب السبعة
 
 قوالب طلبات جاهزة تظهر في تطبيق كلود (من قائمة «+» في مربع الكتابة، أو بكتابة «/» في المحادثة). تملأ حقلًا أو حقلين فيرسم القالبُ لكلود خطةَ عمل كاملة بالأدوات المناسبة.
 
@@ -127,8 +134,11 @@ export function buildGuideText(): string {
 6. **خطة بحث** (\`khittat_bahth\`) — متى يُستعمل: لإعداد خطة بحث موجزة تبدأ بالتحقق من عدم سبق الدراسة.
    الحقول: «الموضوع» (مطلوب)، و«الجامعة» (اختياري).
    مثال الملء: الموضوع = «أحكام الاستصناع وتطبيقاته المعاصرة»، الجامعة = «جامعة القصيم».
+7. **دليل الاستخدام** (\`daleel\`) — متى يُستعمل: لعرض دليل استخدام الإضافة (هذا الدليل) كاملًا أو قسمًا منه.
+   الحقول: «القسم» (اختياري؛ الافتراضي: الكل، والأقسام: الأدوات، القوالب، النصائح).
+   مثال الملء: القسم = «القوالب».`;
 
-## نصائح الباحث
+const GUIDE_TIPS = `## نصائح الباحث
 
 **ضيِّق النطاق بالتصنيفات.** المكتبة ٤١ تصنيفًا، وكتب التفسير وحدها موزَّعة على ثلاثة تصنيفات (التفسير، وعلوم القرآن وأصول التفسير، والتجويد والقراءات). اطلب حصر البحث في التصنيف المناسب («ابحث في كتب الفقه الحنبلي فقط») تصفُ النتائج وتسرع.
 
@@ -145,6 +155,26 @@ export function buildGuideText(): string {
 - فهرس ربط الآيات بالتفاسير منتقًى ولا يشمل كل التفاسير المنزَّلة؛ ولذلك تعرض أداةُ التغطية حالَ كل كتاب صراحةً، وغياب الكتاب من الفهرس ليس دليلًا على خلوّه من تفسير الآية.
 - بيانات النشر (الطبعة والناشر والمحقق) ناقصة في قاعدة الشاملة غالبًا، فتصرِّح الإحالات بنقصها ولا تختلقها؛ وترقيم الصفحات يُصرَّح بحاله إن كان بترقيم الشاملة الآلي.
 
-وللمزيد: صفحة الإضافة على غيت هب تشمل التثبيت وحلول المشكلات الشائعة.
-`;
+وللمزيد: صفحة الإضافة على غيت هب تشمل التثبيت وحلول المشكلات الشائعة.`;
+
+/** Build the full Arabic markdown text of the user guide. */
+export function buildGuideText(): string {
+    return `${GUIDE_INTRO}\n\n${GUIDE_TOOLS}\n\n${GUIDE_PROMPTS}\n\n${GUIDE_TIPS}\n`;
+}
+
+/**
+ * Build one top-level part of the guide. «الكل» returns the full guide;
+ * the other section names return just their part (heading included).
+ */
+export function buildGuideSectionText(section: GuideSectionName): string {
+    switch (section) {
+        case "الأدوات":
+            return `${GUIDE_TOOLS}\n`;
+        case "القوالب":
+            return `${GUIDE_PROMPTS}\n`;
+        case "النصائح":
+            return `${GUIDE_TIPS}\n`;
+        case "الكل":
+            return buildGuideText();
+    }
 }
