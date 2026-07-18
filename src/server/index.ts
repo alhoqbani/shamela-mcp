@@ -297,7 +297,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "بحث في فهرس المؤلفين",
             description:
-                "Search Shamela's ~3,200-author catalog by name or biography text. Pre-built index — no downloads needed. No scope (authors aren't scoped by category/period). Returns author name, Hijri death year, and book count. Arabic scholars go by several name forms — when a query misses, try the kunya, nisba, and shuhra variants before concluding absence (جرّب الكنية والنسبة والشهرة: ابن قدامة / الموفق / المقدسي). Use the resulting author_id with shamela_get_author for full details, or with scope.author_ids in shamela_search_pages/_books to filter by that author. Examples: shamela_search_authors({query:'ابن عثيمين'}), shamela_search_authors({query:'الشافعي', options:{wildcards:false}}).",
+                "Search Shamela's ~3,200-author catalog by name or biography text. Pre-built index — no downloads needed. No scope (authors aren't scoped by category/period). Returns author name, Hijri death year, and book count. Arabic scholars go by several name forms — when a query misses, try the kunya, nisba, and shuhra variants before concluding absence (جرّب الكنية والنسبة والشهرة: ابن قدامة / الموفق / المقدسي). Use the resulting author_id with shamela_get_author for full details, or with scope.author_ids in shamela_search_pages/_books to filter by that author. Examples: shamela_search_authors({query:'ابن قدامة'}), shamela_search_authors({query:'الشافعي', options:{wildcards:false}}).",
             inputSchema: searchAuthorsInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
@@ -411,7 +411,7 @@ export function createServer(getBackend: () => Promise<Backend>): McpServer {
         {
             title: "تحويل اسم إلى معرِّف",
             description:
-                "Disambiguate Arabic name fragments to book_ids and/or author_ids. Uses the pre-built s_book/ + s_author/ n-gram indexes for fast partial matching. type='book' searches only books, 'author' only authors, 'any' (default) both. Returns up to `limit` results per type with confidence scores. Use this BEFORE search_pages / search_books / search_authors when the user mentions a name but doesn't know the exact ID. Examples: shamela_resolve({query:'ابن عثيمين'}) → returns author_id=57; shamela_resolve({query:'الأصول من علم'}) → returns book matches.",
+                "Disambiguate Arabic name fragments to book_ids and/or author_ids. Uses the pre-built s_book/ + s_author/ n-gram indexes for fast partial matching. type='book' searches only books, 'author' only authors, 'any' (default) both. Returns up to `limit` results per type with confidence scores. Use this BEFORE search_pages / search_books / search_authors when the user mentions a name but doesn't know the exact ID. Examples: shamela_resolve({query:'ابن قدامة'}) → returns the matching author_id(s) with confidence; shamela_resolve({query:'روضة الناظر'}) → returns book matches.",
             inputSchema: resolveInputShape,
             annotations: COMMON_ANNOTATIONS,
         },
