@@ -12,6 +12,18 @@ function makeJavaStub(dir: string): string {
     return javaPath;
 }
 
+// Best-effort temp cleanup: on Windows, AV/indexer scans can hold a fresh
+// temp dir beyond the rmSync retry window (EPERM). Isolation doesn't depend
+// on deletion — every test creates a unique mkdtemp dir — so a leftover dir
+// in the OS temp folder is harmless and the OS reclaims it.
+function rmBestEffort(dir: string): void {
+    try {
+        fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    } catch {
+        /* tolerated: Windows file-lock race */
+    }
+}
+
 describe("resolveJre — macOS bundled JRE discovery", () => {
     let tmpRoot: string;
     let savedEnvJre: string | undefined;
@@ -25,7 +37,7 @@ describe("resolveJre — macOS bundled JRE discovery", () => {
     afterEach(() => {
         if (savedEnvJre === undefined) delete process.env.SHAMELA_JRE;
         else process.env.SHAMELA_JRE = savedEnvJre;
-        fs.rmSync(tmpRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+        rmBestEffort(tmpRoot);
     });
 
     it("finds the JRE under app/mac/arm64 on Apple Silicon installs", () => {
@@ -69,7 +81,7 @@ describe("resolveJre — macOS bundled JRE discovery", () => {
             process.env.SHAMELA_JRE = override;
             expect(resolveJre(tmpRoot, "darwin")).toBe(override);
         } finally {
-            fs.rmSync(overrideDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+            rmBestEffort(overrideDir);
         }
     });
 });
@@ -87,7 +99,7 @@ describe("resolveJre — legacy jre/1 version folder (older installs, issue #4)"
     afterEach(() => {
         if (savedEnvJre === undefined) delete process.env.SHAMELA_JRE;
         else process.env.SHAMELA_JRE = savedEnvJre;
-        fs.rmSync(tmpRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+        rmBestEffort(tmpRoot);
     });
 
     function makeJavaExeStub(dir: string): string {
@@ -130,7 +142,7 @@ describe("resolveJars — lucene version folder fallback (issue #4)", () => {
     });
 
     afterEach(() => {
-        fs.rmSync(tmpRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+        rmBestEffort(tmpRoot);
     });
 
     function makeJar(dir: string, name: string): string {
