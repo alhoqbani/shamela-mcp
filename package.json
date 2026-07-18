@@ -46,7 +46,7 @@
     "@types/node": "^20.19.0",
     "@types/sql.js": "^1.4.11",
     "@vitest/coverage-v8": "^4.1.5",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^4.1.5"

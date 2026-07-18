@@ -25,7 +25,7 @@ describe("resolveJre — macOS bundled JRE discovery", () => {
     afterEach(() => {
         if (savedEnvJre === undefined) delete process.env.SHAMELA_JRE;
         else process.env.SHAMELA_JRE = savedEnvJre;
-        fs.rmSync(tmpRoot, { recursive: true, force: true });
+        fs.rmSync(tmpRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     });
 
     it("finds the JRE under app/mac/arm64 on Apple Silicon installs", () => {
@@ -69,7 +69,7 @@ describe("resolveJre — macOS bundled JRE discovery", () => {
             process.env.SHAMELA_JRE = override;
             expect(resolveJre(tmpRoot, "darwin")).toBe(override);
         } finally {
-            fs.rmSync(overrideDir, { recursive: true, force: true });
+            fs.rmSync(overrideDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
         }
     });
 });
@@ -87,7 +87,7 @@ describe("resolveJre — legacy jre/1 version folder (older installs, issue #4)"
     afterEach(() => {
         if (savedEnvJre === undefined) delete process.env.SHAMELA_JRE;
         else process.env.SHAMELA_JRE = savedEnvJre;
-        fs.rmSync(tmpRoot, { recursive: true, force: true });
+        fs.rmSync(tmpRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     });
 
     function makeJavaExeStub(dir: string): string {
@@ -130,7 +130,7 @@ describe("resolveJars — lucene version folder fallback (issue #4)", () => {
     });
 
     afterEach(() => {
-        fs.rmSync(tmpRoot, { recursive: true, force: true });
+        fs.rmSync(tmpRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     });
 
     function makeJar(dir: string, name: string): string {
