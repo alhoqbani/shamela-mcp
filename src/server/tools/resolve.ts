@@ -10,7 +10,7 @@ export const resolveInputShape = {
         .string()
         .min(1)
         .describe(
-            "Arabic name fragment to resolve. Use partial names: 'ابن عثيمين' resolves Ibn Uthaymeen, 'الأصول' resolves books with that word in their title.",
+            "Arabic name fragment to resolve. Use partial names: 'ابن قدامة' resolves Ibn Qudamah, 'الروضة' resolves books with that word in their title.",
         ),
     type: z
         .enum(["any", "book", "author"])

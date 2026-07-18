@@ -90,10 +90,10 @@ File -> Settings -> Extensions -> Advanced settings -> Install Extension
 
 ### سيناريو أول — استفسار سريع (≤ ٥ استدعاءات للأدوات)
 
-> ما تعريف «الكلام» عند الشيخ ابن عثيمين؟
+> ما تعريف «القياس» عند ابن قدامة؟
 
-1. `shamela_resolve("ابن عثيمين")` — معرِّف المؤلف.
-2. `shamela_search_pages("الكلام", scope.author_ids=[id])` — أعلى المطابقات.
+1. `shamela_resolve("ابن قدامة")` — معرِّف المؤلف.
+2. `shamela_search_pages("القياس", scope.author_ids=[id])` — أعلى المطابقات.
 3. `shamela_get_page(book_id, page_id)` — قراءة المتن.
 
 النتيجة: الجواب من «الأصول من علم الأصول»، صفحة ١٧، مع المسار من جذر الفهرس.
