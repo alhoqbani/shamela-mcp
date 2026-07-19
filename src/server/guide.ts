@@ -7,14 +7,14 @@
  * Ordinary users install the .mcpb and never visit the repository, so the
  * extension itself carries the user guide. Pure text assembly (no backend),
  * exported as functions so the integration suite can drift-guard it: the
- * returned text must name all 30 tools and all 7 prompts.
+ * returned text must name all 30 tools.
  *
- * Content rules: every tool/prompt line is grounded in its actual
+ * Content rules: every tool line is grounded in its actual
  * manifest.json description — no invented capabilities.
  */
 
 /** Top-level guide parts addressable via the shamela_guide `section` input. */
-export const GUIDE_SECTION_NAMES = ["الكل", "الأدوات", "القوالب", "النصائح"] as const;
+export const GUIDE_SECTION_NAMES = ["الكل", "الأدوات", "النصائح"] as const;
 export type GuideSectionName = (typeof GUIDE_SECTION_NAMES)[number];
 
 const GUIDE_INTRO = `# دليل استخدام إضافة «بحث ودراسة في المكتبة الشاملة»
@@ -109,34 +109,8 @@ const GUIDE_TOOLS = `## الأدوات الثلاثون
 
 - **\`shamela_health\`** — فحص ذاتي: نسخة الخادم، وعدد كتب الفهرس والمنزَّل منها، وتحقق سريع من قابلية القراءة. استعمله أولًا إذا بدت الأدوات معطَّلة أو فارغة.
   مثال: «افحص إضافة الشاملة وتأكد أنها تعمل.»
-- **\`shamela_guide\`** — عرض دليل استخدام الإضافة (هذا الدليل) من داخل المحادثة، كاملًا أو قسمًا منه: الأدوات أو القوالب أو النصائح.
+- **\`shamela_guide\`** — عرض دليل استخدام الإضافة (هذا الدليل) من داخل المحادثة، كاملًا أو قسمًا منه: الأدوات أو النصائح.
   مثال: «ماذا تستطيع إضافة الشاملة أن تفعل؟»`;
-
-const GUIDE_PROMPTS = `## القوالب السبعة
-
-قوالب طلبات جاهزة الصياغة. أين تجدها؟ اضغط زر علامة الجمع (+) في طرف مربع الكتابة في تطبيق كلود — وهو زر إرفاق الملفات نفسه — ثم اختر اسم الإضافة، أو اكتب «/» في مربع كتابة فارغ فتظهر قائمة القوالب. والقالب طلبٌ منهجي مكتوب مسبقًا يُدرَج نيابةً عنك: تملأ حقلًا أو حقلين فيمضي كلود على خطة عمل كاملة بالأدوات المناسبة — وهو اختياري، ومتى شئت كتبت بأسلوبك الحر.
-
-1. **دراسة مسألة فقهية** (\`study_masala\`) — متى يُستعمل: عند دراسة مسألة فقهية دراسة منهجية تبدأ بتصوير المسألة ثم البحث في مظانّها.
-   الحقول: «المسألة» (مطلوب).
-   مثال الملء: المسألة = «حكم سجود السهو لمن شك في عدد الركعات».
-2. **مقارنة المذاهب** (\`compare_madhahib\`) — متى يُستعمل: لمقارنة أقوال المذاهب الفقهية في مسألة بالبحث المتوازي في كتب كل مذهب، مع جمع النتيجة في جدول.
-   الحقول: «المسألة» (مطلوب)، و«المذاهب» (اختياري؛ الافتراضي: الأربعة).
-   مثال الملء: المسألة = «نقض الوضوء بمس المرأة»، المذاهب = «الحنبلي».
-3. **تخريج حديث** (\`trace_hadith\`) — متى يُستعمل: لتخريج حديث يبدأ بتصنيف المعلوم عنه ثم تتبع مفاتيحه عبر الكتب المنزَّلة.
-   الحقول: «نص الحديث أو طرفه» (مطلوب).
-   مثال الملء: النص = «إنما الأعمال بالنيات».
-4. **مقارنة تفاسير آية** (\`tafsir_aya_muqaran\`) — متى يُستعمل: لجمع تفسير آية من عدة تفاسير منزَّلة مرتَّبة بوفيات المفسرين.
-   الحقول: «الآية» (مطلوب: السورة ورقم الآية، أو نص الآية أو طرفها).
-   مثال الملء: الآية = «البقرة ٢٥٥».
-5. **دراسة نازلة معاصرة** (\`nazila_muasira\`) — متى يُستعمل: لدراسة نازلة معاصرة على مراحلها الخمس من تصوير الواقع إلى عرض الحكم.
-   الحقول: «النازلة» (مطلوب).
-   مثال الملء: النازلة = «حكم التعامل بالعملات الرقمية».
-6. **خطة بحث** (\`khittat_bahth\`) — متى يُستعمل: لإعداد خطة بحث موجزة تبدأ بالتحقق من عدم سبق الدراسة.
-   الحقول: «الموضوع» (مطلوب)، و«الجامعة» (اختياري).
-   مثال الملء: الموضوع = «أحكام الاستصناع وتطبيقاته المعاصرة»، الجامعة = «جامعة القصيم».
-7. **دليل الاستخدام** (\`daleel\`) — متى يُستعمل: لعرض دليل استخدام الإضافة (هذا الدليل) كاملًا أو قسمًا منه.
-   الحقول: «القسم» (اختياري؛ الافتراضي: الكل، والأقسام: الأدوات، القوالب، النصائح).
-   مثال الملء: القسم = «القوالب».`;
 
 const GUIDE_TIPS = `## نصائح الباحث
 
@@ -159,7 +133,7 @@ const GUIDE_TIPS = `## نصائح الباحث
 
 /** Build the full Arabic markdown text of the user guide. */
 export function buildGuideText(): string {
-    return `${GUIDE_INTRO}\n\n${GUIDE_TOOLS}\n\n${GUIDE_PROMPTS}\n\n${GUIDE_TIPS}\n`;
+    return `${GUIDE_INTRO}\n\n${GUIDE_TOOLS}\n\n${GUIDE_TIPS}\n`;
 }
 
 /**
@@ -170,8 +144,6 @@ export function buildGuideSectionText(section: GuideSectionName): string {
     switch (section) {
         case "الأدوات":
             return `${GUIDE_TOOLS}\n`;
-        case "القوالب":
-            return `${GUIDE_PROMPTS}\n`;
         case "النصائح":
             return `${GUIDE_TIPS}\n`;
         case "الكل":

@@ -57,15 +57,6 @@ const EXPECTED_TOOL_NAMES = [
     "shamela_guide",
 ] as const;
 
-const EXPECTED_PROMPT_NAMES = [
-    "study_masala",
-    "compare_madhahib",
-    "trace_hadith",
-    "tafsir_aya_muqaran",
-    "nazila_muasira",
-    "khittat_bahth",
-    "daleel",
-] as const;
 
 describe("MCP server end-to-end (InMemoryTransport)", () => {
     let client: Client;
@@ -104,137 +95,6 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
         }
     });
 
-    it("lists all 7 expected prompts", async () => {
-        const result = await client.listPrompts();
-        const names = new Set(result.prompts.map((p) => p.name));
-        for (const expected of EXPECTED_PROMPT_NAMES) {
-            expect(names.has(expected), `expected prompt ${expected}`).toBe(true);
-        }
-        expect(result.prompts).toHaveLength(EXPECTED_PROMPT_NAMES.length);
-    });
-
-    it("each prompt exposes a non-empty title and description", async () => {
-        const result = await client.listPrompts();
-        for (const p of result.prompts) {
-            expect(p.title?.length ?? 0, `prompt ${p.name} title`).toBeGreaterThan(0);
-            expect(p.description?.length ?? 0, `prompt ${p.name} description`).toBeGreaterThan(0);
-        }
-    });
-
-    it("prompt templates match manifest.json exactly (single source of truth, no drift)", async () => {
-        const manifestPath = fileURLToPath(new URL("../../manifest.json", import.meta.url));
-        const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
-            prompts: Array<{ name: string; description: string; arguments: string[]; text: string }>;
-        };
-        expect(manifest.prompts.map((p) => p.name).sort()).toEqual(
-            [...EXPECTED_PROMPT_NAMES].sort(),
-        );
-
-        const listed = await client.listPrompts();
-        for (const entry of manifest.prompts) {
-            // Manifest description must match the registered prompt's description.
-            const registered = listed.prompts.find((p) => p.name === entry.name);
-            expect(registered, `prompt ${entry.name} registered`).toBeDefined();
-            expect(registered!.description).toBe(entry.description);
-
-            // Rendering the prompt with sentinel arguments must reproduce the
-            // manifest template with ALL of its `${arg}` placeholders
-            // substituted (required and optional alike).
-            expect(entry.arguments.length).toBeGreaterThanOrEqual(1);
-            const sentinels = Object.fromEntries(
-                entry.arguments.map((argName) => [argName, `قيمة-${argName}`]),
-            );
-            const rendered = await client.getPrompt({
-                name: entry.name,
-                arguments: sentinels,
-            });
-            expect(rendered.messages).toHaveLength(1);
-            const msg = rendered.messages[0]!;
-            expect(msg.role).toBe("user");
-            expect(msg.content.type).toBe("text");
-            let expected = entry.text;
-            for (const [argName, sentinel] of Object.entries(sentinels)) {
-                expected = expected.replaceAll("${" + argName + "}", sentinel);
-            }
-            expect((msg.content as { type: "text"; text: string }).text).toBe(expected);
-        }
-    });
-
-    describe("prompt argument completions (completion/complete)", () => {
-        it("compare_madhahib.madhahib offers the four-madhhab set", async () => {
-            const r = await client.complete({
-                ref: { type: "ref/prompt", name: "compare_madhahib" },
-                argument: { name: "madhahib", value: "" },
-            });
-            expect(r.completion.values).toEqual([
-                "الأربعة",
-                "الحنفي",
-                "المالكي",
-                "الشافعي",
-                "الحنبلي",
-            ]);
-        });
-
-        it("khittat_bahth.jamia lists all 8 universities and filters by prefix", async () => {
-            const all = await client.complete({
-                ref: { type: "ref/prompt", name: "khittat_bahth" },
-                argument: { name: "jamia", value: "" },
-            });
-            expect(all.completion.values).toHaveLength(8);
-
-            const filtered = await client.complete({
-                ref: { type: "ref/prompt", name: "khittat_bahth" },
-                argument: { name: "jamia", value: "جامعة الملك" },
-            });
-            expect(filtered.completion.values).toEqual([
-                "جامعة الملك سعود",
-                "جامعة الملك عبد العزيز",
-                "جامعة الملك خالد",
-            ]);
-        });
-
-        it("daleel.qism offers the four guide sections and defaults to الكل when omitted", async () => {
-            const r = await client.complete({
-                ref: { type: "ref/prompt", name: "daleel" },
-                argument: { name: "qism", value: "" },
-            });
-            expect(r.completion.values).toEqual(["الكل", "الأدوات", "القوالب", "النصائح"]);
-
-            const rendered = await client.getPrompt({ name: "daleel", arguments: {} });
-            const text = (rendered.messages[0]!.content as { type: "text"; text: string }).text;
-            expect(text).toContain("بقسم «الكل»");
-            expect(text).toContain("shamela_guide");
-        });
-
-        it("optional arguments are declared optional and default when omitted", async () => {
-            const listed = await client.listPrompts();
-            const compare = listed.prompts.find((p) => p.name === "compare_madhahib")!;
-            const madhahibArg = compare.arguments?.find((a) => a.name === "madhahib");
-            expect(madhahibArg).toBeDefined();
-            expect(madhahibArg!.required ?? false).toBe(false);
-
-            const rendered = await client.getPrompt({
-                name: "compare_madhahib",
-                arguments: { masala: "مسألة-اختبارية" },
-            });
-            const text = (rendered.messages[0]!.content as { type: "text"; text: string }).text;
-            expect(text).toContain("والنطاق المطلوب من المذاهب: الأربعة");
-
-            const jamiaArg = listed.prompts
-                .find((p) => p.name === "khittat_bahth")!
-                .arguments?.find((a) => a.name === "jamia");
-            expect(jamiaArg).toBeDefined();
-            expect(jamiaArg!.required ?? false).toBe(false);
-
-            const khitta = await client.getPrompt({
-                name: "khittat_bahth",
-                arguments: { mawdu: "موضوع-اختباري" },
-            });
-            const khittaText = (khitta.messages[0]!.content as { type: "text"; text: string })
-                .text;
-            expect(khittaText).toContain("والجامعة المقصودة: غير محددة");
-        });
-    });
 
     describe("shamela://guide resource (in-app user guide)", () => {
         it("resources/list includes shamela://guide", async () => {
@@ -256,13 +116,10 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
             expect(text).toBe(buildGuideText());
         });
 
-        it("drift guard: the guide names all 30 tools and all 7 prompts", () => {
+        it("drift guard: the guide names all 30 tools", () => {
             const text = buildGuideText();
             for (const toolName of EXPECTED_TOOL_NAMES) {
                 expect(text, `guide must mention tool ${toolName}`).toContain(toolName);
-            }
-            for (const promptName of EXPECTED_PROMPT_NAMES) {
-                expect(text, `guide must mention prompt ${promptName}`).toContain(promptName);
             }
         });
     });
@@ -282,21 +139,19 @@ describe("MCP server end-to-end (InMemoryTransport)", () => {
             expect(r.content[0]!.text).toBe(buildGuideText());
         });
 
-        it("section=القوالب returns just the templates part (a proper subset)", async () => {
+        it("section=الأدوات returns just the tools part (a proper subset)", async () => {
             const r = (await client.callTool({
                 name: "shamela_guide",
-                arguments: { section: "القوالب" },
+                arguments: { section: "الأدوات" },
             })) as CallResult;
             expect(r.isError, errText(r)).toBeFalsy();
             const sc = r.structuredContent as { section: string; text: string };
-            expect(sc.section).toBe("القوالب");
-            expect(sc.text).toBe(buildGuideSectionText("القوالب"));
-            // Contains the template names…
-            for (const p of EXPECTED_PROMPT_NAMES) {
-                expect(sc.text, `section must mention prompt ${p}`).toContain(p);
-            }
-            // …but not the tools section, and it is strictly smaller than the full guide.
-            expect(sc.text).not.toContain("shamela_search_pages");
+            expect(sc.section).toBe("الأدوات");
+            expect(sc.text).toBe(buildGuideSectionText("الأدوات"));
+            // Contains a tool name…
+            expect(sc.text).toContain("shamela_search_pages");
+            // …but not the tips section, and it is strictly smaller than the full guide.
+            expect(sc.text).not.toContain("نصائح الباحث");
             expect(sc.text.length).toBeLessThan(buildGuideText().length);
         });
 
