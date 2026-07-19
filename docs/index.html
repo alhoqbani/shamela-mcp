@@ -36,7 +36,7 @@
     background:radial-gradient(1200px 620px at 88% -8%, color-mix(in srgb,var(--coral) 13%,var(--bg)) 0%, rgba(0,0,0,0) 60%), var(--bg);
     color:var(--ink); font-family:var(--arab); line-height:1.6; -webkit-font-smoothing:antialiased;
   }
-  html[data-lang="en"] body{font-family:var(--latin)}
+  html[data-lang="en"] body,html[data-lang="id"] body,html[data-lang="ms"] body{font-family:var(--latin)}
   .lat{font-family:var(--serif)}
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
   a{color:var(--coral-deep)}
@@ -44,9 +44,11 @@
   .eyebrow{color:var(--coral-deep);font-weight:800;font-size:15px;letter-spacing:.02em}
   h2{font-size:clamp(26px,4vw,36px);font-weight:800;margin:6px 0 6px;text-wrap:balance}
   .lead{color:var(--muted);font-size:clamp(16px,2.2vw,19px);max-width:60ch}
-  .en{display:none}
-  html[data-lang="en"] .ar{display:none}
+  .en,.id,.ms{display:none}
+  html[data-lang="en"] .ar,html[data-lang="id"] .ar,html[data-lang="ms"] .ar{display:none}
   html[data-lang="en"] .en{display:revert}
+  html[data-lang="id"] .id{display:revert}
+  html[data-lang="ms"] .ms{display:revert}
 
   /* header */
   header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 86%,transparent);
@@ -180,19 +182,24 @@
   <div class="wrap nav">
     <div class="logo">
       <svg width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><g stroke="var(--coral)" stroke-width="3.4" stroke-linecap="round"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.5" y1="8.5" x2="31.5" y2="31.5"/><line x1="31.5" y1="8.5" x2="8.5" y2="31.5"/><line x1="20" y1="7" x2="20" y2="33" transform="rotate(22.5 20 20)"/><line x1="7" y1="20" x2="33" y2="20" transform="rotate(22.5 20 20)"/></g></svg>
-      <span class="ar">المكتبة الشاملة</span><span class="en">Shamela Library</span>
+      <span class="ar">المكتبة الشاملة</span><span class="en">Shamela Library</span><span class="id">Maktabah Syamilah</span><span class="ms">Maktabah Syamilah</span>
     </div>
     <nav class="navlinks">
-      <a href="#work"><span class="ar">المزايا</span><span class="en">Features</span></a>
-      <a href="#tools"><span class="ar">الأدوات</span><span class="en">Tools</span></a>
-      <a href="#install"><span class="ar">التثبيت</span><span class="en">Install</span></a>
-      <a href="#usage"><span class="ar">الاستخدام</span><span class="en">Usage</span></a>
+      <a href="#work"><span class="ar">المزايا</span><span class="en">Features</span><span class="id">Fitur</span><span class="ms">Ciri-ciri</span></a>
+      <a href="#tools"><span class="ar">الأدوات</span><span class="en">Tools</span><span class="id">Perkakas</span><span class="ms">Alat</span></a>
+      <a href="#install"><span class="ar">التثبيت</span><span class="en">Install</span><span class="id">Instalasi</span><span class="ms">Pemasangan</span></a>
+      <a href="#usage"><span class="ar">الاستخدام</span><span class="en">Usage</span><span class="id">Penggunaan</span><span class="ms">Penggunaan</span></a>
     </nav>
     <div class="navspace"></div>
-    <button class="tools-btn" id="lang" aria-label="Language">English</button>
+    <select class="tools-btn" id="lang" aria-label="Language / اللغة">
+      <option value="ar">العربية</option>
+      <option value="en">English</option>
+      <option value="id">Bahasa Indonesia</option>
+      <option value="ms">Bahasa Melayu</option>
+    </select>
     <button class="tools-btn" id="theme" aria-label="Theme">◐</button>
     <a class="dl" href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">
-      <span class="ar">تنزيل</span><span class="en">Download</span></a>
+      <span class="ar">تنزيل</span><span class="en">Download</span><span class="id">Unduh</span><span class="ms">Muat Turun</span></a>
   </div>
 </header>
 
@@ -202,73 +209,73 @@
       <span class="badge">
         <svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true"><g stroke="var(--coral)" stroke-width="3.6" stroke-linecap="round"><line x1="20" y1="5" x2="20" y2="35"/><line x1="5" y1="20" x2="35" y2="20"/><line x1="9" y1="9" x2="31" y2="31"/><line x1="31" y1="9" x2="9" y2="31"/></g></svg>
         <span class="ar">إضافة لتطبيق <b class="lat">Claude Desktop</b> (سطح المكتب) · مجانية ومفتوحة المصدر</span>
-        <span class="en">An extension for <b class="lat">Claude Desktop</b> · free &amp; open source</span>
+        <span class="en">An extension for <b class="lat">Claude Desktop</b> · free &amp; open source</span><span class="id">Ekstensi untuk <b class="lat">Claude Desktop</b> · gratis &amp; sumber terbuka</span><span class="ms">Sambungan untuk <b class="lat">Claude Desktop</b> · percuma &amp; sumber terbuka</span>
       </span>
       <h1>
         <span class="ar">بحث ودراسة في <span class="em">المكتبة الشاملة</span></span>
-        <span class="en">Search &amp; Study in the <span class="em">Shamela Library</span></span>
+        <span class="en">Search &amp; Study in the <span class="em">Shamela Library</span></span><span class="id">Meneliti &amp; Mengkaji di <span class="em">Maktabah Syamilah</span></span><span class="ms">Cari &amp; Kaji dalam <span class="em">Maktabah Syamilah</span></span>
       </h1>
       <p class="sub">
         <span class="ar">اسأل بلغتك… يبحث كلود في كتبك المنزَّلة على جهازك، ويجيب بعزوٍ دقيق للكتاب والصفحة.</span>
-        <span class="en">Ask in your own words — Claude searches your locally installed books and answers with precise citations to book and page.</span>
+        <span class="en">Ask in your own words — Claude searches your locally installed books and answers with precise citations to book and page.</span><span class="id">Bertanyalah dengan bahasa Anda sendiri — Claude mencari di kitab-kitab yang terpasang di perangkat Anda dan menjawab dengan sitasi yang tepat ke kitab dan halaman.</span><span class="ms">Tanya dengan bahasa anda sendiri — Claude mencari dalam kitab yang anda muat turun pada peranti anda, dan menjawab dengan sandaran tepat kepada kitab dan halaman.</span>
       </p>
       <div class="cta">
         <a class="btn primary" href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">
-          <span class="ar">تنزيل الإضافة</span><span class="en">Download the extension</span></a>
+          <span class="ar">تنزيل الإضافة</span><span class="en">Download the extension</span><span class="id">Unduh ekstensi</span><span class="ms">Muat turun sambungan</span></a>
         <a class="btn ghost" href="https://github.com/alhoqbani/shamela-mcp" target="_blank" rel="noopener">
-          <span class="ar">المستودع على GitHub</span><span class="en">View on GitHub</span></a>
+          <span class="ar">المستودع على GitHub</span><span class="en">View on GitHub</span><span class="id">Lihat di GitHub</span><span class="ms">Repositori di GitHub</span></a>
       </div>
       <p class="vnote">
         <span class="ar">تعمل مع تطبيق المكتبة الشاملة ٤ المثبَّت على جهازك.</span>
-        <span class="en">Works with the Shamela 4 app installed on your device.</span>
+        <span class="en">Works with the Shamela 4 app installed on your device.</span><span class="id">Bekerja dengan aplikasi Maktabah Syamilah 4 yang terpasang di perangkat Anda.</span><span class="ms">Berfungsi dengan aplikasi Maktabah Syamilah 4 yang dipasang pada peranti anda.</span>
       </p>
     </div>
 
     <div class="chat" aria-hidden="true">
       <div class="bub q">
-        <div class="av u"><span class="ar">أنت</span><span class="en">You</span></div>
-        <div><div class="who"><span class="ar">سؤالك بلغتك</span><span class="en">Your question</span></div>
+        <div class="av u"><span class="ar">أنت</span><span class="en">You</span><span class="id">Anda</span><span class="ms">Anda</span></div>
+        <div><div class="who"><span class="ar">سؤالك بلغتك</span><span class="en">Your question</span><span class="id">Pertanyaan Anda</span><span class="ms">Soalan anda</span></div>
           <div class="mtxt"><span class="ar">اجمع لي أقوال المذاهب في هذه المسألة من كتبي المنزَّلة، مع العزو.</span>
-            <span class="en">Gather the schools' opinions on this issue from my installed books, with citations.</span></div></div>
+            <span class="en">Gather the schools' opinions on this issue from my installed books, with citations.</span><span class="id">Kumpulkan pendapat mazhab-mazhab tentang masalah ini dari kitab-kitab yang saya pasang, lengkap dengan sitasi.</span><span class="ms">Kumpulkan untuk saya pendapat mazhab-mazhab dalam masalah ini daripada kitab yang saya muat turun, berserta sandaran.</span></div></div>
       </div>
       <div class="bub a">
         <div class="av a"><svg width="20" height="20" viewBox="0 0 40 40" aria-hidden="true"><g stroke="var(--coral-deep)" stroke-width="3.6" stroke-linecap="round"><line x1="20" y1="5" x2="20" y2="35"/><line x1="5" y1="20" x2="35" y2="20"/><line x1="9" y1="9" x2="31" y2="31"/><line x1="31" y1="9" x2="9" y2="31"/></g></svg></div>
         <div><div class="who lat">Claude</div>
           <div class="mtxt"><span class="ar">أبحثُ في كتبك المنزَّلة، وأعرض كل قولٍ بدليله وعزوِه إلى كتابه وصفحته — لا أزيد من عندي.</span>
-            <span class="en">I search your installed books and present each opinion with its evidence, cited to its book and page — nothing added from myself.</span></div>
+            <span class="en">I search your installed books and present each opinion with its evidence, cited to its book and page — nothing added from myself.</span><span class="id">Saya mencari di kitab-kitab Anda yang terpasang, dan menyajikan setiap pendapat beserta dalil dan sitasinya ke kitab dan halamannya — tanpa menambah apa pun dari diri saya.</span><span class="ms">Saya mencari dalam kitab yang anda muat turun, dan memaparkan setiap pendapat berserta dalilnya dan sandarannya kepada kitab dan halamannya — tanpa menambah apa-apa dari diri saya.</span></div>
           <span class="cite"><i></i>
             <span class="ar">العزو الدقيق: اسم الكتاب · الجزء · الصفحة</span>
-            <span class="en">Precise citation: book · volume · page</span></span></div>
+            <span class="en">Precise citation: book · volume · page</span><span class="id">Sitasi yang tepat: nama kitab · juz · halaman</span><span class="ms">Sandaran tepat: nama kitab · jilid · halaman</span></span></div>
       </div>
     </div>
   </div>
 
   <div class="metabar">
-    <div class="mi"><div class="mk"><span class="ar">التطبيق</span><span class="en">App</span></div>
+    <div class="mi"><div class="mk"><span class="ar">التطبيق</span><span class="en">App</span><span class="id">Aplikasi</span><span class="ms">Aplikasi</span></div>
       <div class="mv lat">Claude Desktop <span class="ar" style="font-family:var(--arab);font-weight:600">· سطح المكتب</span></div></div>
-    <div class="mi"><div class="mk"><span class="ar">الإصدار</span><span class="en">Version</span></div>
-      <div class="mv"><span class="lat">1.2.0</span> <span class="ar">— يوليو ٢٠٢٦</span><span class="en">— Jul 2026</span></div></div>
-    <div class="mi"><div class="mk"><span class="ar">الترخيص</span><span class="en">License</span></div>
-      <div class="mv"><span class="ar">مفتوح المصدر · مجّاني</span><span class="en">Open source · free</span></div></div>
-    <div class="mi"><div class="mk"><span class="ar">التوافق</span><span class="en">Requires</span></div>
-      <div class="mv"><span class="ar">المكتبة الشاملة ٤</span><span class="en">Shamela 4 app</span></div></div>
+    <div class="mi"><div class="mk"><span class="ar">الإصدار</span><span class="en">Version</span><span class="id">Versi</span><span class="ms">Versi</span></div>
+      <div class="mv"><span class="lat">1.2.0</span> <span class="ar">— يوليو ٢٠٢٦</span><span class="en">— Jul 2026</span><span class="id">— Juli 2026</span><span class="ms">— Julai 2026</span></div></div>
+    <div class="mi"><div class="mk"><span class="ar">الترخيص</span><span class="en">License</span><span class="id">Lisensi</span><span class="ms">Lesen</span></div>
+      <div class="mv"><span class="ar">مفتوح المصدر · مجّاني</span><span class="en">Open source · free</span><span class="id">Sumber terbuka · gratis</span><span class="ms">Sumber terbuka · percuma</span></div></div>
+    <div class="mi"><div class="mk"><span class="ar">التوافق</span><span class="en">Requires</span><span class="id">Kompatibilitas</span><span class="ms">Keperluan</span></div>
+      <div class="mv"><span class="ar">المكتبة الشاملة ٤</span><span class="en">Shamela 4 app</span><span class="id">Aplikasi Maktabah Syamilah 4</span><span class="ms">Maktabah Syamilah 4</span></div></div>
   </div>
 </div>
 
 <!-- WORK -->
 <section id="work">
   <div class="wrap">
-    <div class="eyebrow"><span class="ar">لماذا هذه الإضافة</span><span class="en">Why this extension</span></div>
-    <h2><span class="ar">عمل الإضافة</span><span class="en">How it works</span></h2>
+    <div class="eyebrow"><span class="ar">لماذا هذه الإضافة</span><span class="en">Why this extension</span><span class="id">Mengapa ekstensi ini</span><span class="ms">Mengapa sambungan ini</span></div>
+    <h2><span class="ar">عمل الإضافة</span><span class="en">How it works</span><span class="id">Cara kerjanya</span><span class="ms">Cara ia berfungsi</span></h2>
     <p class="lead"><span class="ar">تصل تطبيق كلود بمكتبتك الحقيقية من «الشاملة ٤»، فتتحوَّل من محرك بحثٍ في نصوص إلى مساعد بحثٍ منهجي يقرأ ويجمع ويعزو.</span>
-      <span class="en">It connects Claude to your real Shamela 4 library — turning it from a text search box into a methodical research assistant that reads, gathers, and cites.</span></p>
+      <span class="en">It connects Claude to your real Shamela 4 library — turning it from a text search box into a methodical research assistant that reads, gathers, and cites.</span><span class="id">Menghubungkan Claude dengan perpustakaan nyata Anda dari Syamilah 4 — mengubahnya dari sekadar kotak pencarian teks menjadi asisten riset yang metodis: membaca, mengumpulkan, dan memberi sitasi.</span><span class="ms">Ia menghubungkan Claude dengan perpustakaan sebenar anda daripada «Syamilah 4», lalu bertukar daripada enjin carian teks kepada pembantu penyelidikan bermanhaj yang membaca, mengumpul, dan menyandarkan.</span></p>
     <div class="grid g3">
-      <div class="card"><div class="ic">﴿</div><h3><span class="ar">تسأل بلغتك</span><span class="en">Ask naturally</span></h3><p><span class="ar">حوار طبيعي بالعربية، بلا أوامر تقنية ولا صيغ بحثٍ معقّدة.</span><span class="en">Plain conversation — no technical commands or complex query syntax.</span></p></div>
-      <div class="card"><div class="ic">✽</div><h3><span class="ar">من كتبك أنت</span><span class="en">From your own books</span></h3><p><span class="ar">يبحث ويقرأ في الكتب المنزَّلة على جهازك مباشرة.</span><span class="en">Searches and reads the books installed on your own device.</span></p></div>
-      <div class="card"><div class="ic">◆</div><h3><span class="ar">دقة النقل</span><span class="en">Faithful citation</span></h3><p><span class="ar">كل اقتباس معزوّ لكتابه وصفحته، بلا زيادةٍ من عند النموذج.</span><span class="en">Every quote is cited to its book and page — nothing added by the model.</span></p></div>
-      <div class="card"><div class="ic">≡</div><h3><span class="ar">المتن والحاشية</span><span class="en">Text vs. footnote</span></h3><p><span class="ar">يميّز متن المصنِّف من حاشية المحقق فلا يخلط بينهما.</span><span class="en">Distinguishes the author's text from the editor's footnotes.</span></p></div>
-      <div class="card"><div class="ic">⇲</div><h3><span class="ar">يجمع ويقارن</span><span class="en">Gather &amp; compare</span></h3><p><span class="ar">يجمع الأقوال، يقارن، يلخّص، ويخرّج الأحاديث.</span><span class="en">Collects opinions, compares, summarizes, and traces hadith.</span></p></div>
-      <div class="card"><div class="ic">⌂</div><h3><span class="ar">محليٌّ وخاص</span><span class="en">Local &amp; private</span></h3><p><span class="ar">يقرأ ملفات مكتبتك على جهازك قراءةً فقط، بلا خادمٍ وسيط.</span><span class="en">Reads your library files locally, read-only, with no intermediary server.</span></p></div>
+      <div class="card"><div class="ic">﴿</div><h3><span class="ar">تسأل بلغتك</span><span class="en">Ask naturally</span><span class="id">Bertanya dengan bahasa sendiri</span><span class="ms">Tanya dengan bahasa anda</span></h3><p><span class="ar">حوار طبيعي بالعربية، بلا أوامر تقنية ولا صيغ بحثٍ معقّدة.</span><span class="en">Plain conversation — no technical commands or complex query syntax.</span><span class="id">Percakapan alami dengan bahasa Anda, tanpa perintah teknis atau sintaks pencarian yang rumit.</span><span class="ms">Perbualan biasa dengan bahasa anda sendiri, tanpa arahan teknikal atau format carian yang rumit.</span></p></div>
+      <div class="card"><div class="ic">✽</div><h3><span class="ar">من كتبك أنت</span><span class="en">From your own books</span><span class="id">Dari kitab-kitab Anda sendiri</span><span class="ms">Daripada kitab anda sendiri</span></h3><p><span class="ar">يبحث ويقرأ في الكتب المنزَّلة على جهازك مباشرة.</span><span class="en">Searches and reads the books installed on your own device.</span><span class="id">Mencari dan membaca langsung kitab-kitab yang terpasang di perangkat Anda.</span><span class="ms">Mencari dan membaca kitab yang dimuat turun pada peranti anda secara terus.</span></p></div>
+      <div class="card"><div class="ic">◆</div><h3><span class="ar">دقة النقل</span><span class="en">Faithful citation</span><span class="id">Ketepatan penukilan</span><span class="ms">Ketepatan nukilan</span></h3><p><span class="ar">كل اقتباس معزوّ لكتابه وصفحته، بلا زيادةٍ من عند النموذج.</span><span class="en">Every quote is cited to its book and page — nothing added by the model.</span><span class="id">Setiap kutipan disandarkan ke kitab dan halamannya — tanpa tambahan dari model.</span><span class="ms">Setiap petikan disandarkan kepada kitab dan halamannya, tanpa tambahan daripada model.</span></p></div>
+      <div class="card"><div class="ic">≡</div><h3><span class="ar">المتن والحاشية</span><span class="en">Text vs. footnote</span><span class="id">Matan dan hasyiyah</span><span class="ms">Matan dan hasyiah</span></h3><p><span class="ar">يميّز متن المصنِّف من حاشية المحقق فلا يخلط بينهما.</span><span class="en">Distinguishes the author's text from the editor's footnotes.</span><span class="id">Membedakan matan penulis dari hasyiyah muhaqqiq sehingga tidak tercampur.</span><span class="ms">Membezakan matan pengarang daripada hasyiah pentahkik supaya tidak bercampur aduk.</span></p></div>
+      <div class="card"><div class="ic">⇲</div><h3><span class="ar">يجمع ويقارن</span><span class="en">Gather &amp; compare</span><span class="id">Mengumpulkan & membandingkan</span><span class="ms">Mengumpul & membanding</span></h3><p><span class="ar">يجمع الأقوال، يقارن، يلخّص، ويخرّج الأحاديث.</span><span class="en">Collects opinions, compares, summarizes, and traces hadith.</span><span class="id">Mengumpulkan pendapat, membandingkan, meringkas, dan men-takhrij hadis.</span><span class="ms">Mengumpul pendapat, membanding, meringkas, dan mentakhrij hadis.</span></p></div>
+      <div class="card"><div class="ic">⌂</div><h3><span class="ar">محليٌّ وخاص</span><span class="en">Local &amp; private</span><span class="id">Lokal & privat</span><span class="ms">Setempat & peribadi</span></h3><p><span class="ar">يقرأ ملفات مكتبتك على جهازك قراءةً فقط، بلا خادمٍ وسيط.</span><span class="en">Reads your library files locally, read-only, with no intermediary server.</span><span class="id">Membaca berkas perpustakaan Anda di perangkat secara baca-saja, tanpa server perantara.</span><span class="ms">Membaca fail perpustakaan anda pada peranti anda secara baca sahaja, tanpa pelayan perantara.</span></p></div>
     </div>
   </div>
 </section>
@@ -276,10 +283,10 @@
 <!-- TOOLS -->
 <section id="tools">
   <div class="wrap">
-    <div class="eyebrow"><span class="ar">دليل الأدوات</span><span class="en">Tools guide</span></div>
-    <h2><span class="ar">٣٠ أداة بحثٍ وقراءة</span><span class="en">30 search &amp; reading tools</span></h2>
+    <div class="eyebrow"><span class="ar">دليل الأدوات</span><span class="en">Tools guide</span><span class="id">Panduan perkakas</span><span class="ms">Panduan alat</span></div>
+    <h2><span class="ar">٣٠ أداة بحثٍ وقراءة</span><span class="en">30 search &amp; reading tools</span><span class="id">30 perkakas pencarian & pembacaan</span><span class="ms">30 alat carian & pembacaan</span></h2>
     <p class="lead"><span class="ar">توسَّعت الإضافة من ٢٠ إلى ٣٠ أداة، موزَّعة على سبع فئات. انقر أي فئة لعرض أدواتها؛ الأدوات المستحدثة في هذا الإصدار مميَّزة.</span>
-      <span class="en">The extension grew from 20 to 30 tools across seven areas. Tap a category to reveal its tools; newly added ones are highlighted.</span></p>
+      <span class="en">The extension grew from 20 to 30 tools across seven areas. Tap a category to reveal its tools; newly added ones are highlighted.</span><span class="id">Ekstensi ini berkembang dari 20 menjadi 30 perkakas dalam tujuh kategori. Klik kategori mana pun untuk menampilkan perkakasnya; perkakas yang baru ditambahkan pada versi ini ditandai khusus.</span><span class="ms">Sambungan ini berkembang daripada 20 kepada 30 alat, merentangi tujuh kategori. Ketik mana-mana kategori untuk memaparkan alatnya; alat baharu dalam versi ini ditonjolkan.</span></p>
     <div class="cats" id="cats"></div>
   </div>
 </section>
@@ -287,59 +294,59 @@
 <!-- SKILL (coming) -->
 <section id="skill">
   <div class="wrap">
-    <div class="eyebrow"><span class="ar">قريبًا</span><span class="en">Coming soon</span></div>
-    <h2><span class="ar">منهجيات بحثٍ موجَّهة — في مهارة الشاملة</span><span class="en">Guided research methodologies — in the Shamela skill</span></h2>
+    <div class="eyebrow"><span class="ar">قريبًا</span><span class="en">Coming soon</span><span class="id">Segera hadir</span><span class="ms">Akan datang</span></div>
+    <h2><span class="ar">منهجيات بحثٍ موجَّهة — في مهارة الشاملة</span><span class="en">Guided research methodologies — in the Shamela skill</span><span class="id">Metodologi riset terpandu — dalam Skill Syamilah</span><span class="ms">Metodologi penyelidikan berpandu — dalam kemahiran Syamilah</span></h2>
     <p class="lead"><span class="ar">تُعدُّ الآن «مهارة الشاملة»: منهجياتٌ بحثية جاهزة (دراسة مسألة فقهية، مقارنة المذاهب، تخريج حديث، مقارنة تفاسير آية، دراسة نازلة معاصرة، إعداد خطة بحث) تُرشد كلود خطوةً خطوة بأدوات الإضافة الثلاثين.</span>
-      <span class="en">The Shamela skill is in the works: ready research methodologies (studying a fiqh issue, comparing the schools, tracing a hadith, comparing tafsirs of a verse, contemporary issues, research planning) that walk Claude step by step through the extension's 30 tools.</span></p>
+      <span class="en">The Shamela skill is in the works: ready research methodologies (studying a fiqh issue, comparing the schools, tracing a hadith, comparing tafsirs of a verse, contemporary issues, research planning) that walk Claude step by step through the extension's 30 tools.</span><span class="id">«Skill Syamilah» sedang disiapkan: metodologi riset siap pakai (mengkaji masalah fikih, membandingkan mazhab, men-takhrij hadis, membandingkan tafsir suatu ayat, mengkaji nazilah kontemporer, menyusun rencana riset) yang memandu Claude langkah demi langkah dengan 30 perkakas ekstensi ini.</span><span class="ms">Kemahiran Syamilah sedang disediakan: metodologi penyelidikan sedia guna (mengkaji masalah fiqh, membandingkan mazhab, takhrij hadis, membandingkan tafsir sesuatu ayat, mengkaji nazilah semasa, menyediakan pelan penyelidikan) yang memandu Claude langkah demi langkah menggunakan 30 alat sambungan ini.</span></p>
   </div>
 </section>
 
 <!-- INSTALL -->
 <section id="install">
   <div class="wrap">
-    <div class="eyebrow"><span class="ar">خطوة بخطوة</span><span class="en">Step by step</span></div>
-    <h2><span class="ar">طريقة التثبيت</span><span class="en">Installation</span></h2>
+    <div class="eyebrow"><span class="ar">خطوة بخطوة</span><span class="en">Step by step</span><span class="id">Langkah demi langkah</span><span class="ms">Langkah demi langkah</span></div>
+    <h2><span class="ar">طريقة التثبيت</span><span class="en">Installation</span><span class="id">Cara pemasangan</span><span class="ms">Cara pemasangan</span></h2>
     <div class="steps">
       <div class="step"><div class="st"><span class="ar">تأكَّد من المتطلبات: تطبيق <b class="lat">Claude Desktop</b> على جهازك، وتطبيق المكتبة الشاملة ٤ وفيه كتب منزَّلة.</span>
-        <span class="en">Make sure you have the requirements: the <b class="lat">Claude Desktop</b> app, and the Shamela 4 app with books downloaded.</span></div></div>
+        <span class="en">Make sure you have the requirements: the <b class="lat">Claude Desktop</b> app, and the Shamela 4 app with books downloaded.</span><span class="id">Pastikan persyaratan terpenuhi: aplikasi <b class="lat">Claude Desktop</b> di perangkat Anda, dan aplikasi Maktabah Syamilah 4 dengan kitab-kitab yang sudah diunduh.</span><span class="ms">Pastikan keperluan dipenuhi: aplikasi <b class="lat">Claude Desktop</b> pada peranti anda, dan aplikasi Maktabah Syamilah 4 yang mempunyai kitab yang dimuat turun.</span></div></div>
       <div class="step"><div class="st"><span class="ar">نزّل ملف الإضافة (بامتداد <b class="lat">.mcpb</b>) من <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">صفحة الإصدار</a> (أو زر «تنزيل» بالأعلى).</span>
-        <span class="en">Download the extension file (<b class="lat">.mcpb</b>) from the <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">release page</a> (or the “Download” button above).</span></div></div>
+        <span class="en">Download the extension file (<b class="lat">.mcpb</b>) from the <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">release page</a> (or the “Download” button above).</span><span class="id">Unduh berkas ekstensi (berekstensi <b class="lat">.mcpb</b>) dari <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">halaman rilis</a> (atau tombol «Unduh» di atas).</span><span class="ms">Muat turun fail sambungan (berformat <b class="lat">.mcpb</b>) daripada <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">halaman keluaran</a> (atau butang «Muat Turun» di atas).</span></div></div>
       <div class="step"><div class="st"><span class="ar">افتح الملف بنقرة مزدوجة، أو من التطبيق: <b>الإعدادات ← الإضافات ← تثبيت إضافة</b>، ثم اختر الملف.</span>
-        <span class="en">Open the file by double-clicking, or from the app: <b>Settings → Extensions → Install extension</b>, then pick the file.</span></div></div>
+        <span class="en">Open the file by double-clicking, or from the app: <b>Settings → Extensions → Install extension</b>, then pick the file.</span><span class="id">Buka berkas dengan klik ganda, atau dari aplikasi: <b>Pengaturan → Ekstensi → Pasang ekstensi</b>, lalu pilih berkasnya.</span><span class="ms">Buka fail dengan klik dua kali, atau daripada aplikasi: <b>Tetapan → Sambungan → Pasang sambungan</b>, kemudian pilih fail.</span></div></div>
       <div class="step"><div class="st"><span class="ar">تصبح أدوات الشاملة جاهزة في محادثتك. اسأل: «افحص إضافة الشاملة» للتأكد أنها تعمل.</span>
-        <span class="en">Shamela's tools become available in your chat. Ask “check the Shamela extension” to confirm it works.</span></div></div>
+        <span class="en">Shamela's tools become available in your chat. Ask “check the Shamela extension” to confirm it works.</span><span class="id">Perkakas Syamilah pun siap di percakapan Anda. Tanyakan: «periksa ekstensi Syamilah» untuk memastikan ia bekerja.</span><span class="ms">Alat Syamilah menjadi tersedia dalam perbualan anda. Tanya: «periksa sambungan Syamilah» untuk memastikan ia berfungsi.</span></div></div>
     </div>
-    <div class="callout"><b><span class="ar">التحديث من نسخة سابقة:</span><span class="en">Updating from an earlier version:</span></b>
+    <div class="callout"><b><span class="ar">التحديث من نسخة سابقة:</span><span class="en">Updating from an earlier version:</span><span class="id">Memperbarui dari versi sebelumnya:</span><span class="ms">Mengemas kini daripada versi terdahulu:</span></b>
       <span class="ar"> احذف النسخة القديمة من إعدادات الإضافات في التطبيق، ثم ثبّت الملف الجديد بالطريقة نفسها. بياناتك ومكتبتك لا تتأثر — الإضافة تقرأ فقط.</span>
-      <span class="en"> remove the old version from the app's extension settings, then install the new file the same way. Your data and library are untouched — the extension only reads.</span></div>
+      <span class="en"> remove the old version from the app's extension settings, then install the new file the same way. Your data and library are untouched — the extension only reads.</span><span class="id"> hapus versi lama dari pengaturan ekstensi di aplikasi, lalu pasang berkas baru dengan cara yang sama. Data dan perpustakaan Anda tidak terpengaruh — ekstensi ini hanya membaca.</span><span class="ms"> buang versi lama daripada tetapan sambungan dalam aplikasi, kemudian pasang fail baharu dengan cara yang sama. Data dan perpustakaan anda tidak terjejas — sambungan ini hanya membaca.</span></div>
   </div>
 </section>
 
 <!-- USAGE -->
 <section id="usage">
   <div class="wrap">
-    <div class="eyebrow"><span class="ar">كيف تستعملها</span><span class="en">How to use it</span></div>
-    <h2><span class="ar">طريقة الاستخدام</span><span class="en">Usage</span></h2>
+    <div class="eyebrow"><span class="ar">كيف تستعملها</span><span class="en">How to use it</span><span class="id">Cara memakainya</span><span class="ms">Cara menggunakannya</span></div>
+    <h2><span class="ar">طريقة الاستخدام</span><span class="en">Usage</span><span class="id">Cara penggunaan</span><span class="ms">Cara penggunaan</span></h2>
     <p class="lead"><span class="ar">اكتب سؤالك بالعربية طبيعيًّا في محادثة كلود، فيتولَّى هو اختيار الأدوات والبحث في كتبك والعرض بالعزو. وهذه أمثلة تكتبها كما هي:</span>
-      <span class="en">Just type your question naturally in a Claude chat; it chooses the tools, searches your books, and answers with citations. Here are examples you can type as-is:</span></p>
+      <span class="en">Just type your question naturally in a Claude chat; it chooses the tools, searches your books, and answers with citations. Here are examples you can type as-is:</span><span class="id">Cukup tulis pertanyaan Anda secara alami dalam percakapan Claude; ia akan memilih perkakas, mencari di kitab-kitab Anda, dan menyajikan jawaban dengan sitasi. Berikut contoh yang bisa Anda tulis apa adanya:</span><span class="ms">Taipkan soalan anda secara semula jadi dalam perbualan Claude, lalu ia sendiri memilih alat, mencari dalam kitab anda, dan memaparkan jawapan berserta sandaran. Berikut contoh yang boleh anda taip sebagaimana adanya:</span></p>
     <div class="exs">
-      <div class="ex"><span class="qm">”</span><span><span class="ar">اجمع أقوال المذاهب في حكم بيع العربون، مع الأدلة والعزو.</span><span class="en">Gather the schools' rulings on down-payment sales, with evidence and citations.</span></span></div>
-      <div class="ex"><span class="qm">”</span><span><span class="ar">خرِّج لي حديث «إنما الأعمال بالنيات» ومواضعه في كتبي.</span><span class="en">Trace the hadith “Actions are by intentions” and where it appears in my books.</span></span></div>
-      <div class="ex"><span class="qm">”</span><span><span class="ar">قارن بين تفاسير آية الكرسي في التفاسير المنزَّلة عندي.</span><span class="en">Compare the tafsirs of Ayat al-Kursi across my installed commentaries.</span></span></div>
-      <div class="ex"><span class="qm">”</span><span><span class="ar">ما مدى انتشار جذر «صبر» في مكتبتي عبر القرون؟</span><span class="en">How widespread is the root “ṣ-b-r” in my library across the centuries?</span></span></div>
+      <div class="ex"><span class="qm">”</span><span><span class="ar">اجمع أقوال المذاهب في حكم بيع العربون، مع الأدلة والعزو.</span><span class="en">Gather the schools' rulings on down-payment sales, with evidence and citations.</span><span class="id">Kumpulkan pendapat mazhab tentang hukum jual beli 'urbun (uang muka), lengkap dengan dalil dan sitasi.</span><span class="ms">Kumpulkan pendapat mazhab tentang hukum jual beli 'urbun (wang cengkeram), berserta dalil dan sandaran.</span></span></div>
+      <div class="ex"><span class="qm">”</span><span><span class="ar">خرِّج لي حديث «إنما الأعمال بالنيات» ومواضعه في كتبي.</span><span class="en">Trace the hadith “Actions are by intentions” and where it appears in my books.</span><span class="id">Takhrij-kan hadis «Sesungguhnya amal itu tergantung niat» dan tempat-tempatnya dalam kitab-kitab saya.</span><span class="ms">Takhrijkan hadis «Sesungguhnya setiap amalan bergantung pada niat» dan tempat-tempatnya dalam kitab saya.</span></span></div>
+      <div class="ex"><span class="qm">”</span><span><span class="ar">قارن بين تفاسير آية الكرسي في التفاسير المنزَّلة عندي.</span><span class="en">Compare the tafsirs of Ayat al-Kursi across my installed commentaries.</span><span class="id">Bandingkan tafsir-tafsir Ayat Kursi dalam kitab-kitab tafsir yang saya pasang.</span><span class="ms">Bandingkan tafsir Ayat al-Kursi dalam kitab-kitab tafsir yang saya muat turun.</span></span></div>
+      <div class="ex"><span class="qm">”</span><span><span class="ar">ما مدى انتشار جذر «صبر» في مكتبتي عبر القرون؟</span><span class="en">How widespread is the root “ṣ-b-r” in my library across the centuries?</span><span class="id">Seberapa luas persebaran akar kata «ṣ-b-r» dalam perpustakaan saya sepanjang abad?</span><span class="ms">Sejauh mana penyebaran akar kata «صبر» dalam perpustakaan saya sepanjang kurun?</span></span></div>
     </div>
     <p class="hint"><span class="ar">اكتب سؤالك بأسلوبك الحر؛ وكلَّما وصفت مرادك ومصادرك دقَّ الجواب وعزوُه. <b>ومنهجيات البحث الموجَّهة قادمة في مهارة الشاملة.</b></span>
-      <span class="en">Just write in your own words — the more you describe your goal and sources, the sharper the answer and its citations. <b>Guided research methodologies are coming in the Shamela skill.</b></span></p>
+      <span class="en">Just write in your own words — the more you describe your goal and sources, the sharper the answer and its citations. <b>Guided research methodologies are coming in the Shamela skill.</b></span><span class="id">Tulislah pertanyaan dengan gaya bebas Anda; semakin jelas Anda menjelaskan tujuan dan sumbernya, semakin tepat jawaban dan sitasinya. <b>Metodologi riset terpandu akan hadir dalam Skill Syamilah.</b></span><span class="ms">Tulis soalan anda dengan gaya bebas anda sendiri; semakin jelas anda menerangkan tujuan dan sumber anda, semakin tepat jawapan dan sandarannya. <b>Metodologi penyelidikan berpandu akan datang dalam kemahiran Syamilah.</b></span></p>
   </div>
 </section>
 
 <!-- PRIVACY -->
 <section id="privacy">
   <div class="wrap">
-    <div class="eyebrow"><span class="ar">الخصوصية والأمانة</span><span class="en">Privacy &amp; integrity</span></div>
-    <h2><span class="ar">بياناتك على جهازك</span><span class="en">Your data stays on your device</span></h2>
+    <div class="eyebrow"><span class="ar">الخصوصية والأمانة</span><span class="en">Privacy &amp; integrity</span><span class="id">Privasi & amanah</span><span class="ms">Privasi & amanah</span></div>
+    <h2><span class="ar">بياناتك على جهازك</span><span class="en">Your data stays on your device</span><span class="id">Data Anda tetap di perangkat Anda</span><span class="ms">Data anda kekal pada peranti anda</span></h2>
     <p class="lead"><span class="ar">تقرأ الإضافة ملفات المكتبة الشاملة على جهازك قراءةً فقط، ولا تغيّر فيها شيئًا، ومن غير خادمٍ وسيطٍ خاصٍّ بها. أما نصوص المحادثة فتخضع لسياسة تطبيق كلود المعتادة. ومبدأ «دقة النقل» أساسٌ في التصميم: كل نقلٍ معزوّ، ولا يُكمَّل نصٌّ من خارج كتبك.</span>
-      <span class="en">The extension reads your Shamela library files locally, read-only, changing nothing, with no intermediary server of its own. Your conversation text is governed by Claude's usual app policy. “Faithful citation” is a design principle: every quote is cited, and no text is completed from outside your books.</span></p>
+      <span class="en">The extension reads your Shamela library files locally, read-only, changing nothing, with no intermediary server of its own. Your conversation text is governed by Claude's usual app policy. “Faithful citation” is a design principle: every quote is cited, and no text is completed from outside your books.</span><span class="id">Ekstensi ini membaca berkas Maktabah Syamilah di perangkat Anda secara baca-saja, tanpa mengubah apa pun, dan tanpa server perantara miliknya sendiri. Adapun teks percakapan tunduk pada kebijakan aplikasi Claude sebagaimana biasa. Prinsip «ketepatan penukilan» menjadi asas desain: setiap nukilan disertai sitasi, dan tidak ada teks yang dilengkapi dari luar kitab-kitab Anda.</span><span class="ms">Sambungan ini membaca fail perpustakaan Maktabah Syamilah pada peranti anda secara baca sahaja, tanpa mengubah apa-apa padanya, dan tanpa pelayan perantara tersendiri. Adapun teks perbualan, ia tertakluk kepada dasar biasa aplikasi Claude. Prinsip «ketepatan nukilan» menjadi asas dalam reka bentuknya: setiap nukilan disandarkan, dan tiada teks yang dilengkapkan daripada luar kitab anda.</span></p>
   </div>
 </section>
 
@@ -348,17 +355,17 @@
     <div class="fgrid">
       <div class="fowner">
         <span class="ar">مشروع مفتوح المصدر · للتفاصيل والمساهمة على <b>GitHub</b></span>
-        <span class="en">An open-source project · details &amp; contributions on <b>GitHub</b></span>
+        <span class="en">An open-source project · details &amp; contributions on <b>GitHub</b></span><span class="id">Proyek sumber terbuka · detail &amp; kontribusi di <b>GitHub</b></span><span class="ms">Projek sumber terbuka · butiran &amp; sumbangan di <b>GitHub</b></span>
       </div>
       <div class="flinks">
         <a href="https://github.com/alhoqbani/shamela-mcp" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener"><span class="ar">الإصدارات</span><span class="en">Releases</span></a>
-        <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener"><span class="ar">تنزيل</span><span class="en">Download</span></a>
+        <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener"><span class="ar">الإصدارات</span><span class="en">Releases</span><span class="id">Rilis</span><span class="ms">Keluaran</span></a>
+        <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener"><span class="ar">تنزيل</span><span class="en">Download</span><span class="id">Unduh</span><span class="ms">Muat Turun</span></a>
       </div>
     </div>
     <div class="fmeta">
       <span class="ar">إضافة مجانية مفتوحة المصدر لتطبيق Claude Desktop · الإصدار 1.2.0 · تعمل مع المكتبة الشاملة ٤ على جهازك.</span>
-      <span class="en">A free, open-source extension for Claude Desktop · v1.2.0 · works with the Shamela 4 app on your device.</span>
+      <span class="en">A free, open-source extension for Claude Desktop · v1.2.0 · works with the Shamela 4 app on your device.</span><span class="id">Ekstensi gratis dan sumber terbuka untuk Claude Desktop · versi 1.2.0 · bekerja dengan Maktabah Syamilah 4 di perangkat Anda.</span><span class="ms">Sambungan percuma sumber terbuka untuk Claude Desktop · Versi 1.2.0 · berfungsi dengan Maktabah Syamilah 4 pada peranti anda.</span>
     </div>
   </div>
 </footer>
@@ -366,32 +373,20 @@
 <script>
   // ---- data: 30 tools in 7 categories (bilingual) ----
   var CATS=[
-    {ar:{nm:"البحث",ds:"عام · بالعناوين · بالكتب · بالمؤلفين · القرآن"},en:{nm:"Search",ds:"pages · titles · books · authors · Qur'an"},
-     old:{ar:["بحث عام في الصفحات","في عناوين الأبواب","في فهرس الكتب","في المؤلفين","في القرآن الكريم"],en:["general page search","chapter titles","book catalog","authors","the Qur'an"]},
-     neu:{ar:["بالعبارة الكاملة والتقارب","مطابق دقيق (تشكيل/همزات/أرقام)","منطقي (و/أو/دون)"],en:["exact phrase & proximity","exact match (diacritics/hamza/digits)","boolean (AND/OR/NOT)"]}},
-    {ar:{nm:"القرآن والتفسير",ds:"الآيات · جلب الآية · التفسير"},en:{nm:"Qur'an & Tafsir",ds:"verse search · fetch verse · tafsir"},
-     old:{ar:["البحث في الآيات","جلب آية بالرسوم","الكتب المفسِّرة لآية"],en:["verse search","fetch a verse","books that explain a verse"]},
-     neu:{ar:["تغطية تفاسيرك المنزَّلة لآية","جلب التفسير من عدة مصادر بالعزو"],en:["your tafsir coverage per verse","multi-source tafsir with citation"]}},
-    {ar:{nm:"الحديث",ds:"كتب الرواية · إشارات الصفحة"},en:{nm:"Hadith",ds:"narration books · page signals"},
-     old:{ar:["كتب رواية حديث بالرقم","إشارات الصفحة: آيات وأحاديث وأسانيد"],en:["narrating books by id","page signals: verses, hadith, chains"]},
-     neu:{ar:["البحث عن حديث بنصه مع التخريج"],en:["find a hadith by its text, with takhrij"]}},
-    {ar:{nm:"القراءة والتصفح",ds:"الصفحات · الفهرس · الأبواب · الأجزاء"},en:{nm:"Reading & browsing",ds:"pages · index · chapters · volumes"},
-     old:{ar:["جلب صفحة كاملة","قراءة نطاق صفحات","فهرس الكتاب","قراءة باب كامل","أجزاء الكتاب"],en:["fetch a full page","read a page range","book table of contents","read a whole chapter","book volumes"]},
-     neu:{ar:[],en:[]}},
-    {ar:{nm:"الفهارس والبيانات",ds:"التصنيفات · المنزَّلة · بيانات الكتاب والمؤلف · العزو"},en:{nm:"Catalog & metadata",ds:"categories · downloaded · book/author data · citation"},
-     old:{ar:["تصنيفات المكتبة","الكتب المنزَّلة","بيانات كتاب","بيانات مؤلف","تحليل اسم إلى كتاب/مؤلف","صياغة الإحالة"],en:["library categories","downloaded books","book details","author details","resolve a name to book/author","format a citation"]},
-     neu:{ar:[],en:[]}},
-    {ar:{nm:"الإحصاء والزمن",ds:"انتشار الجذور · التصفية الزمنية"},en:{nm:"Statistics & time",ds:"root spread · temporal filtering"},
-     old:{ar:[],en:[]},
-     neu:{ar:["انتشار جذر عبر التصنيفات والقرون","الكتب بحسب التأليف أو الوفاة"],en:["root spread across categories & centuries","books by composition or death year"]}},
-    {ar:{nm:"التشخيص والدليل",ds:"فحص الإضافة · الدليل المدمج"},en:{nm:"Health & guide",ds:"self-check · built-in guide"},
-     old:{ar:[],en:[]},
-     neu:{ar:["فحص صحة الإضافة والمكتبة","الدليل المدمج داخل كلود"],en:["extension & library health check","built-in guide inside Claude"]}}
+    {ar:{nm:"البحث",ds:"عام · بالعناوين · بالكتب · بالمؤلفين · القرآن"},en:{nm:"Search",ds:"pages · titles · books · authors · Qur'an"},id:{nm:"Pencarian",ds:"umum · judul · kitab · penulis · Al-Qur'an"},ms:{nm:"Carian",ds:"umum · tajuk · kitab · pengarang · al-Quran"},old:{ar:["بحث عام في الصفحات","في عناوين الأبواب","في فهرس الكتب","في المؤلفين","في القرآن الكريم"],en:["general page search","chapter titles","book catalog","authors","the Qur'an"],id:["pencarian umum di halaman","di judul-judul bab","di katalog kitab","di daftar penulis","di Al-Qur'an al-Karim"],ms:["carian umum dalam halaman","dalam tajuk bab","dalam katalog kitab","dalam pengarang","dalam al-Quran al-Karim"]},neu:{ar:["بالعبارة الكاملة والتقارب","مطابق دقيق (تشكيل/همزات/أرقام)","منطقي (و/أو/دون)"],en:["exact phrase & proximity","exact match (diacritics/hamza/digits)","boolean (AND/OR/NOT)"],id:["frasa utuh & kedekatan (proximity)","kecocokan persis (harakat/hamzah/angka)","boolean (DAN/ATAU/BUKAN)"],ms:["frasa penuh & kedekatan","padanan tepat (baris/hamzah/angka)","boolean (DAN/ATAU/BUKAN)"]}},
+    {ar:{nm:"القرآن والتفسير",ds:"الآيات · جلب الآية · التفسير"},en:{nm:"Qur'an & Tafsir",ds:"verse search · fetch verse · tafsir"},id:{nm:"Al-Qur'an & Tafsir",ds:"pencarian ayat · ambil ayat · tafsir"},ms:{nm:"Al-Quran & Tafsir",ds:"carian ayat · dapatkan ayat · tafsir"},old:{ar:["البحث في الآيات","جلب آية بالرسوم","الكتب المفسِّرة لآية"],en:["verse search","fetch a verse","books that explain a verse"],id:["pencarian dalam ayat","ambil ayat sesuai rasm","kitab-kitab yang menafsirkan suatu ayat"],ms:["carian dalam ayat","dapatkan ayat dengan rasm Uthmani","kitab yang menafsirkan sesuatu ayat"]},neu:{ar:["تغطية تفاسيرك المنزَّلة لآية","جلب التفسير من عدة مصادر بالعزو"],en:["your tafsir coverage per verse","multi-source tafsir with citation"],id:["cakupan kitab tafsir Anda untuk suatu ayat","ambil tafsir dari beberapa sumber dengan sitasi"],ms:["liputan tafsir anda yang dimuat turun bagi sesuatu ayat","dapatkan tafsir daripada pelbagai sumber berserta sandaran"]}},
+    {ar:{nm:"الحديث",ds:"كتب الرواية · إشارات الصفحة"},en:{nm:"Hadith",ds:"narration books · page signals"},id:{nm:"Hadis",ds:"kitab-kitab riwayat · penanda halaman"},ms:{nm:"Hadis",ds:"kitab riwayat · isyarat halaman"},old:{ar:["كتب رواية حديث بالرقم","إشارات الصفحة: آيات وأحاديث وأسانيد"],en:["narrating books by id","page signals: verses, hadith, chains"],id:["kitab-kitab yang meriwayatkan hadis (berdasarkan nomor)","penanda halaman: ayat, hadis, dan sanad"],ms:["kitab yang meriwayatkan hadis mengikut nombor","isyarat halaman: ayat, hadis, dan sanad"]},neu:{ar:["البحث عن حديث بنصه مع التخريج"],en:["find a hadith by its text, with takhrij"],id:["mencari hadis berdasarkan teksnya, lengkap dengan takhrij"],ms:["cari hadis melalui teksnya berserta takhrij"]}},
+    {ar:{nm:"القراءة والتصفح",ds:"الصفحات · الفهرس · الأبواب · الأجزاء"},en:{nm:"Reading & browsing",ds:"pages · index · chapters · volumes"},id:{nm:"Membaca & menjelajah",ds:"halaman · daftar isi · bab · juz"},ms:{nm:"Pembacaan & semak imbas",ds:"halaman · fihris · bab · jilid"},old:{ar:["جلب صفحة كاملة","قراءة نطاق صفحات","فهرس الكتاب","قراءة باب كامل","أجزاء الكتاب"],en:["fetch a full page","read a page range","book table of contents","read a whole chapter","book volumes"],id:["ambil satu halaman penuh","membaca rentang halaman","daftar isi kitab","membaca satu bab penuh","juz-juz kitab"],ms:["dapatkan halaman penuh","baca julat halaman","senarai kandungan kitab","baca bab penuh","jilid kitab"]},neu:{ar:[],en:[],id:[],ms:[]}},
+    {ar:{nm:"الفهارس والبيانات",ds:"التصنيفات · المنزَّلة · بيانات الكتاب والمؤلف · العزو"},en:{nm:"Catalog & metadata",ds:"categories · downloaded · book/author data · citation"},id:{nm:"Katalog & metadata",ds:"kategori · terunduh · data kitab & penulis · sitasi"},ms:{nm:"Katalog & metadata",ds:"kategori · dimuat turun · data kitab/pengarang · sandaran"},old:{ar:["تصنيفات المكتبة","الكتب المنزَّلة","بيانات كتاب","بيانات مؤلف","تحليل اسم إلى كتاب/مؤلف","صياغة الإحالة"],en:["library categories","downloaded books","book details","author details","resolve a name to book/author","format a citation"],id:["kategori perpustakaan","kitab-kitab yang terunduh","data kitab","data penulis","menguraikan nama menjadi kitab/penulis","menyusun format sitasi"],ms:["kategori perpustakaan","kitab yang dimuat turun","data kitab","data pengarang","kenal pasti nama kepada kitab/pengarang","susun rujukan"]},neu:{ar:[],en:[],id:[],ms:[]}},
+    {ar:{nm:"الإحصاء والزمن",ds:"انتشار الجذور · التصفية الزمنية"},en:{nm:"Statistics & time",ds:"root spread · temporal filtering"},id:{nm:"Statistik & waktu",ds:"persebaran akar kata · penyaringan berdasarkan waktu"},ms:{nm:"Statistik & masa",ds:"penyebaran akar kata · penapisan mengikut masa"},old:{ar:[],en:[],id:[],ms:[]},neu:{ar:["انتشار جذر عبر التصنيفات والقرون","الكتب بحسب التأليف أو الوفاة"],en:["root spread across categories & centuries","books by composition or death year"],id:["persebaran akar kata lintas kategori & abad","kitab berdasarkan tahun penulisan atau wafat"],ms:["penyebaran akar kata merentasi kategori & kurun","kitab mengikut tahun pengarangan atau kewafatan"]}},
+    {ar:{nm:"التشخيص والدليل",ds:"فحص الإضافة · الدليل المدمج"},en:{nm:"Health & guide",ds:"self-check · built-in guide"},id:{nm:"Diagnostik & panduan",ds:"pemeriksaan ekstensi · panduan bawaan"},ms:{nm:"Diagnosis & panduan",ds:"semakan sambungan · panduan terbina dalam"},old:{ar:[],en:[],id:[],ms:[]},neu:{ar:["فحص صحة الإضافة والمكتبة","الدليل المدمج داخل كلود"],en:["extension & library health check","built-in guide inside Claude"],id:["pemeriksaan kesehatan ekstensi & perpustakaan","panduan bawaan di dalam Claude"],ms:["semakan kesihatan sambungan & perpustakaan","panduan terbina dalam Claude"]}}
   ];
 
   var L={
     ar:{newAll:"جديد كليًّا",newN:function(n){return "+"+["","١","٢","٣"][n]+" جديد"}},
-    en:{newAll:"all new",newN:function(n){return "+"+n+" new"}}
+    en:{newAll:"all new",newN:function(n){return "+"+n+" new"}},
+    id:{newAll:"sepenuhnya baru",newN:function(n){return "+"+n+" baru"}},
+    ms:{newAll:"semuanya baharu",newN:function(n){return "+"+n+" baharu"}}
   };
   var box=document.getElementById("cats");
   function renderCats(){
@@ -415,17 +410,19 @@
   }
 
   // ---- language ----
+  var LANGS=["ar","en","id","ms"];
   function setLang(lang){
+    if(LANGS.indexOf(lang)<0) lang="ar";
     var root=document.documentElement;
     root.setAttribute("data-lang",lang);
     root.setAttribute("lang",lang);
     root.setAttribute("dir", lang==="ar" ? "rtl" : "ltr");
-    document.getElementById("lang").textContent = lang==="ar" ? "English" : "العربية";
+    var sel=document.getElementById("lang"); if(sel) sel.value=lang;
     try{localStorage.setItem("shamela-lang",lang)}catch(e){}
     renderCats();
   }
-  document.getElementById("lang").addEventListener("click",function(){
-    setLang(document.documentElement.getAttribute("data-lang")==="ar" ? "en" : "ar");
+  document.getElementById("lang").addEventListener("change",function(){
+    setLang(this.value);
   });
 
   // ---- theme ----
