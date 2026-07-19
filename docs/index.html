@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بحث ودراسة في المكتبة الشاملة — إضافة Claude</title>
+<meta name="description" content="إضافة مجانية مفتوحة المصدر تصل تطبيق Claude بمكتبتك من «الشاملة 4» على جهازك: تسأل بلغتك فيبحث في كتبك المنزَّلة ويجيب بعزوٍ دقيق. دليل الأدوات، والتثبيت، والاستخدام.">
+<style>
+  :root{
+    --bg:#F0EDE4; --surface:#FBFAF6; --surface2:#F4F0E7; --border:#E4DFD2;
+    --ink:#23201B; --muted:#6F695D; --coral:#D97757; --coral-deep:#BE5D3B;
+    --chip-bg:#F7E7DE; --chip-tx:#B4522F; --chip-bd:#EBCBBB;
+    --shadow:0 10px 34px rgba(35,32,27,.08); --shadow-sm:0 4px 14px rgba(35,32,27,.06);
+    --arab:"Segoe UI","Geeza Pro","SF Arabic","Noto Sans Arabic",system-ui,sans-serif;
+    --latin:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --serif:Georgia,"Times New Roman",serif;
+    --maxw:1080px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#201D16; --surface:#2B271F; --surface2:#332E24; --border:#443E31;
+      --ink:#F1EDE3; --muted:#ADA592; --coral:#E58B6B; --coral-deep:#F0A98C;
+      --chip-bg:#3A2C23; --chip-tx:#F0A98C; --chip-bd:#573F30;
+      --shadow:0 12px 34px rgba(0,0,0,.36); --shadow-sm:0 4px 14px rgba(0,0,0,.3); }
+  }
+  :root[data-theme="light"]{ --bg:#F0EDE4; --surface:#FBFAF6; --surface2:#F4F0E7; --border:#E4DFD2;
+    --ink:#23201B; --muted:#6F695D; --coral:#D97757; --coral-deep:#BE5D3B;
+    --chip-bg:#F7E7DE; --chip-tx:#B4522F; --chip-bd:#EBCBBB; --shadow:0 10px 34px rgba(35,32,27,.08); --shadow-sm:0 4px 14px rgba(35,32,27,.06); }
+  :root[data-theme="dark"]{ --bg:#201D16; --surface:#2B271F; --surface2:#332E24; --border:#443E31;
+    --ink:#F1EDE3; --muted:#ADA592; --coral:#E58B6B; --coral-deep:#F0A98C;
+    --chip-bg:#3A2C23; --chip-tx:#F0A98C; --chip-bd:#573F30; --shadow:0 12px 34px rgba(0,0,0,.36); --shadow-sm:0 4px 14px rgba(0,0,0,.3); }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    background:radial-gradient(1200px 620px at 88% -8%, color-mix(in srgb,var(--coral) 13%,var(--bg)) 0%, rgba(0,0,0,0) 60%), var(--bg);
+    color:var(--ink); font-family:var(--arab); line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  html[data-lang="en"] body{font-family:var(--latin)}
+  .lat{font-family:var(--serif)}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  a{color:var(--coral-deep)}
+  section{padding:56px 0;border-top:1px solid var(--border)}
+  .eyebrow{color:var(--coral-deep);font-weight:800;font-size:15px;letter-spacing:.02em}
+  h2{font-size:clamp(26px,4vw,36px);font-weight:800;margin:6px 0 6px;text-wrap:balance}
+  .lead{color:var(--muted);font-size:clamp(16px,2.2vw,19px);max-width:60ch}
+  .en{display:none}
+  html[data-lang="en"] .ar{display:none}
+  html[data-lang="en"] .en{display:revert}
+
+  /* header */
+  header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 86%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .nav{display:flex;align-items:center;gap:18px;height:64px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;white-space:nowrap}
+  .logo svg{flex-shrink:0}
+  .navlinks{display:flex;gap:20px;margin-inline-start:8px}
+  .navlinks a{color:var(--muted);text-decoration:none;font-size:15.5px;font-weight:600}
+  .navlinks a:hover{color:var(--ink)}
+  .navspace{flex:1}
+  .tools-btn{background:none;border:1px solid var(--border);color:var(--ink);border-radius:9px;
+    padding:7px 12px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:700}
+  .tools-btn:hover{background:var(--surface2)}
+  .tools-btn:focus-visible,a:focus-visible,.acc:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+  .dl{background:var(--coral);color:#fff;text-decoration:none;font-weight:800;font-size:15px;
+    padding:9px 18px;border-radius:10px;white-space:nowrap}
+  .dl:hover{background:var(--coral-deep)}
+  @media(max-width:780px){.navlinks{display:none}}
+
+  /* hero */
+  .hero{padding:52px 0 46px}
+  .badge{display:inline-flex;align-items:center;gap:9px;color:var(--muted);font-size:15px;
+    background:var(--surface);border:1px solid var(--border);border-radius:40px;padding:6px 15px}
+  .badge b{color:var(--ink);font-weight:700}
+  .hero h1{font-size:clamp(38px,7vw,66px);line-height:1.08;font-weight:800;margin:16px 0 0;text-wrap:balance}
+  .hero h1 .em{color:var(--coral-deep)}
+  .hero .sub{font-size:clamp(18px,2.7vw,23px);color:var(--muted);margin-top:14px;max-width:44ch}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+  .btn{text-decoration:none;font-weight:800;font-size:17px;padding:13px 26px;border-radius:12px;display:inline-flex;align-items:center;gap:9px}
+  .btn.primary{background:var(--coral);color:#fff;box-shadow:0 10px 24px rgba(217,119,87,.3)}
+  .btn.primary:hover{background:var(--coral-deep)}
+  .btn.ghost{background:var(--surface);border:1px solid var(--border);color:var(--ink)}
+  .btn.ghost:hover{background:var(--surface2)}
+  .vnote{margin-top:14px;font-size:14.5px;color:var(--muted)}
+
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:center}
+  @media(max-width:860px){.hero-grid{grid-template-columns:1fr;gap:26px}}
+
+  /* chat mock */
+  .chat{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:20px;box-shadow:var(--shadow)}
+  .bub{display:flex;gap:12px;align-items:flex-start}
+  .bub+.bub{margin-top:14px}
+  .av{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .av.u{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+  .av.a{background:var(--chip-bg)}
+  .who{font-size:13px;color:var(--muted)}
+  .mtxt{font-size:16.5px}
+  .q .mtxt{font-weight:700}
+  .cite{display:inline-flex;align-items:center;gap:8px;margin-top:10px;background:var(--surface2);
+    border:1px solid var(--border);border-radius:10px;padding:6px 13px;font-size:14px;color:var(--coral-deep)}
+  .cite i{width:8px;height:8px;background:var(--coral);transform:rotate(45deg);display:inline-block}
+
+  /* generic cards grid */
+  .grid{display:grid;gap:14px;margin-top:26px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:820px){.g3{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.g3,.g2{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:18px 20px;box-shadow:var(--shadow-sm)}
+  .card .ic{width:34px;height:34px;border-radius:9px;background:var(--chip-bg);color:var(--coral-deep);
+    display:flex;align-items:center;justify-content:center;font-weight:800;margin-bottom:10px}
+  .card h3{font-size:18.5px;margin-bottom:4px}
+  .card p{font-size:15.5px;color:var(--muted)}
+
+  /* tools accordion */
+  .cats{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+  .cat{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .acc{width:100%;background:none;border:0;cursor:pointer;display:flex;align-items:center;gap:14px;
+    padding:15px 18px;text-align:start;color:inherit;font-family:inherit}
+  .acc:hover{background:var(--surface2)}
+  .acc .nm{font-size:18.5px;font-weight:800;min-width:160px}
+  .acc .ds{font-size:15px;color:var(--muted);flex:1}
+  @media(max-width:640px){.acc .ds{display:none}.acc .nm{min-width:0}}
+  .acc .bd{font-size:13px;font-weight:800;color:var(--chip-tx);background:var(--chip-bg);
+    border:1px solid var(--chip-bd);border-radius:30px;padding:3px 12px;white-space:nowrap}
+  .acc .car{width:11px;height:11px;border-inline-start:2px solid var(--muted);border-bottom:2px solid var(--muted);
+    transform:rotate(-45deg);transition:transform .25s;flex-shrink:0}
+  html[dir="ltr"] .acc .car{transform:rotate(45deg)}
+  .cat.open .acc .car{transform:rotate(135deg)}
+  .body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  @media(prefers-reduced-motion:reduce){.body{transition:none}}
+  .body ul{list-style:none;padding:2px 20px 16px;display:flex;flex-wrap:wrap;gap:8px}
+  .body li{font-size:14.5px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:5px 12px}
+  .body li.n{background:var(--chip-bg);border-color:var(--chip-bd);color:var(--chip-tx);font-weight:700}
+
+  /* prompts */
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .chip{background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:9px 20px;font-size:16px}
+  .hint{font-size:16px;color:var(--muted);margin-top:14px}
+  .hint b{color:var(--ink)}
+
+  /* steps */
+  .steps{counter-reset:s;display:flex;flex-direction:column;gap:12px;margin-top:24px}
+  .step{display:flex;gap:15px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+  .step::before{counter-increment:s;content:counter(s);flex-shrink:0;width:34px;height:34px;border-radius:50%;
+    background:var(--coral);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:var(--latin)}
+  .step .st{font-size:16.5px}
+  .step .st b{color:var(--coral-deep)}
+  .callout{margin-top:16px;background:var(--chip-bg);border:1px solid var(--chip-bd);border-radius:14px;
+    padding:15px 18px;font-size:15.5px}
+  .callout b{color:var(--chip-tx)}
+
+  /* usage examples */
+  .exs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+  @media(max-width:640px){.exs{grid-template-columns:1fr}}
+  .ex{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 18px;
+    font-size:16px;display:flex;gap:11px;align-items:flex-start}
+  .ex .qm{color:var(--coral-deep);font-weight:800;font-size:22px;line-height:1;font-family:var(--serif)}
+
+  /* footer */
+  footer{border-top:1px solid var(--border);padding:34px 0 46px;color:var(--muted)}
+  .fgrid{display:flex;justify-content:space-between;gap:22px;flex-wrap:wrap;align-items:center}
+  .flinks{display:flex;gap:18px;flex-wrap:wrap}
+  .flinks a{color:var(--muted);text-decoration:none;font-weight:600;font-size:15px}
+  .flinks a:hover{color:var(--ink)}
+  .fowner{font-size:15px}
+  .fowner b{color:var(--ink)}
+  .fmeta{margin-top:14px;font-size:13.5px;opacity:.85}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><g stroke="var(--coral)" stroke-width="3.4" stroke-linecap="round"><line x1="20" y1="4" x2="20" y2="36"/><line x1="4" y1="20" x2="36" y2="20"/><line x1="8.5" y1="8.5" x2="31.5" y2="31.5"/><line x1="31.5" y1="8.5" x2="8.5" y2="31.5"/><line x1="20" y1="7" x2="20" y2="33" transform="rotate(22.5 20 20)"/><line x1="7" y1="20" x2="33" y2="20" transform="rotate(22.5 20 20)"/></g></svg>
+      <span class="ar">المكتبة الشاملة</span><span class="en">Shamela Library</span>
+    </div>
+    <nav class="navlinks">
+      <a href="#work"><span class="ar">المزايا</span><span class="en">Features</span></a>
+      <a href="#tools"><span class="ar">الأدوات</span><span class="en">Tools</span></a>
+      <a href="#install"><span class="ar">التثبيت</span><span class="en">Install</span></a>
+      <a href="#usage"><span class="ar">الاستخدام</span><span class="en">Usage</span></a>
+    </nav>
+    <div class="navspace"></div>
+    <button class="tools-btn" id="lang" aria-label="Language">English</button>
+    <button class="tools-btn" id="theme" aria-label="Theme">◐</button>
+    <a class="dl" href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">
+      <span class="ar">تنزيل</span><span class="en">Download</span></a>
+  </div>
+</header>
+
+<div class="wrap hero">
+  <div class="hero-grid">
+    <div>
+      <span class="badge">
+        <svg width="18" height="18" viewBox="0 0 40 40" aria-hidden="true"><g stroke="var(--coral)" stroke-width="3.6" stroke-linecap="round"><line x1="20" y1="5" x2="20" y2="35"/><line x1="5" y1="20" x2="35" y2="20"/><line x1="9" y1="9" x2="31" y2="31"/><line x1="31" y1="9" x2="9" y2="31"/></g></svg>
+        <span class="ar">إضافة لتطبيق <b class="lat">Claude</b> · مجانية ومفتوحة المصدر</span>
+        <span class="en">An extension for <b class="lat">Claude</b> · free &amp; open source</span>
+      </span>
+      <h1>
+        <span class="ar">بحث ودراسة في <span class="em">المكتبة الشاملة</span></span>
+        <span class="en">Search &amp; Study in the <span class="em">Shamela Library</span></span>
+      </h1>
+      <p class="sub">
+        <span class="ar">اسأل بلغتك… يبحث كلود في كتبك المنزَّلة على جهازك، ويجيب بعزوٍ دقيق للكتاب والصفحة.</span>
+        <span class="en">Ask in your own words — Claude searches your locally installed books and answers with precise citations to book and page.</span>
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">
+          <span class="ar">تنزيل الإضافة</span><span class="en">Download the extension</span></a>
+        <a class="btn ghost" href="https://github.com/alhoqbani/shamela-mcp" target="_blank" rel="noopener">
+          <span class="ar">المستودع على GitHub</span><span class="en">View on GitHub</span></a>
+      </div>
+      <p class="vnote">
+        <span class="ar">الإصدار <b class="lat">1.2.0</b> · تعمل على <b class="lat">Claude Desktop</b> مع تطبيق المكتبة الشاملة ٤</span>
+        <span class="en">Version <b class="lat">1.2.0</b> · runs on <b class="lat">Claude Desktop</b> with the Shamela 4 app</span>
+      </p>
+    </div>
+
+    <div class="chat" aria-hidden="true">
+      <div class="bub q">
+        <div class="av u"><span class="ar">أنت</span><span class="en">You</span></div>
+        <div><div class="who"><span class="ar">سؤالك بلغتك</span><span class="en">Your question</span></div>
+          <div class="mtxt"><span class="ar">اجمع لي أقوال المذاهب في هذه المسألة من كتبي المنزَّلة، مع العزو.</span>
+            <span class="en">Gather the schools' opinions on this issue from my installed books, with citations.</span></div></div>
+      </div>
+      <div class="bub a">
+        <div class="av a"><svg width="20" height="20" viewBox="0 0 40 40" aria-hidden="true"><g stroke="var(--coral-deep)" stroke-width="3.6" stroke-linecap="round"><line x1="20" y1="5" x2="20" y2="35"/><line x1="5" y1="20" x2="35" y2="20"/><line x1="9" y1="9" x2="31" y2="31"/><line x1="31" y1="9" x2="9" y2="31"/></g></svg></div>
+        <div><div class="who lat">Claude</div>
+          <div class="mtxt"><span class="ar">أبحثُ في كتبك المنزَّلة، وأعرض كل قولٍ بدليله وعزوِه إلى كتابه وصفحته — لا أزيد من عندي.</span>
+            <span class="en">I search your installed books and present each opinion with its evidence, cited to its book and page — nothing added from myself.</span></div>
+          <span class="cite"><i></i>
+            <span class="ar">العزو الدقيق: اسم الكتاب · الجزء · الصفحة</span>
+            <span class="en">Precise citation: book · volume · page</span></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WORK -->
+<section id="work">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ar">لماذا هذه الإضافة</span><span class="en">Why this extension</span></div>
+    <h2><span class="ar">عمل الإضافة</span><span class="en">How it works</span></h2>
+    <p class="lead"><span class="ar">تصل تطبيق كلود بمكتبتك الحقيقية من «الشاملة ٤»، فتتحوَّل من محرك بحثٍ في نصوص إلى مساعد بحثٍ منهجي يقرأ ويجمع ويعزو.</span>
+      <span class="en">It connects Claude to your real Shamela 4 library — turning it from a text search box into a methodical research assistant that reads, gathers, and cites.</span></p>
+    <div class="grid g3">
+      <div class="card"><div class="ic">﴿</div><h3><span class="ar">تسأل بلغتك</span><span class="en">Ask naturally</span></h3><p><span class="ar">حوار طبيعي بالعربية، بلا أوامر تقنية ولا صيغ بحثٍ معقّدة.</span><span class="en">Plain conversation — no technical commands or complex query syntax.</span></p></div>
+      <div class="card"><div class="ic">✽</div><h3><span class="ar">من كتبك أنت</span><span class="en">From your own books</span></h3><p><span class="ar">يبحث ويقرأ في الكتب المنزَّلة على جهازك مباشرة.</span><span class="en">Searches and reads the books installed on your own device.</span></p></div>
+      <div class="card"><div class="ic">◆</div><h3><span class="ar">دقة النقل</span><span class="en">Faithful citation</span></h3><p><span class="ar">كل اقتباس معزوّ لكتابه وصفحته، بلا زيادةٍ من عند النموذج.</span><span class="en">Every quote is cited to its book and page — nothing added by the model.</span></p></div>
+      <div class="card"><div class="ic">≡</div><h3><span class="ar">المتن والحاشية</span><span class="en">Text vs. footnote</span></h3><p><span class="ar">يميّز متن المصنِّف من حاشية المحقق فلا يخلط بينهما.</span><span class="en">Distinguishes the author's text from the editor's footnotes.</span></p></div>
+      <div class="card"><div class="ic">⇲</div><h3><span class="ar">يجمع ويقارن</span><span class="en">Gather &amp; compare</span></h3><p><span class="ar">يجمع الأقوال، يقارن، يلخّص، ويخرّج الأحاديث.</span><span class="en">Collects opinions, compares, summarizes, and traces hadith.</span></p></div>
+      <div class="card"><div class="ic">⌂</div><h3><span class="ar">محليٌّ وخاص</span><span class="en">Local &amp; private</span></h3><p><span class="ar">يقرأ ملفات مكتبتك على جهازك قراءةً فقط، بلا خادمٍ وسيط.</span><span class="en">Reads your library files locally, read-only, with no intermediary server.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section id="tools">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ar">دليل الأدوات</span><span class="en">Tools guide</span></div>
+    <h2><span class="ar">٣٠ أداة بحثٍ وقراءة</span><span class="en">30 search &amp; reading tools</span></h2>
+    <p class="lead"><span class="ar">توسَّعت الإضافة من ٢٠ إلى ٣٠ أداة، موزَّعة على سبع فئات. انقر أي فئة لعرض أدواتها؛ الأدوات المستحدثة في هذا الإصدار مميَّزة.</span>
+      <span class="en">The extension grew from 20 to 30 tools across seven areas. Tap a category to reveal its tools; newly added ones are highlighted.</span></p>
+    <div class="cats" id="cats"></div>
+  </div>
+</section>
+
+<!-- PROMPTS -->
+<section id="prompts">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ar">قوالب جاهزة</span><span class="en">Ready-made templates</span></div>
+    <h2><span class="ar">٧ قوالب بحث جاهزة</span><span class="en">7 ready research templates</span></h2>
+    <p class="lead"><span class="ar">طلباتٌ منهجية مكتوبة مسبقًا: تملأ حقلًا واحدًا فيمضي كلود على خطة بحثٍ مرتبة بالأدوات المناسبة.</span>
+      <span class="en">Pre-written methodical prompts: fill a single field and Claude follows an ordered research plan with the right tools.</span></p>
+    <div class="chips">
+      <span class="chip"><span class="ar">دراسة مسألة فقهية</span><span class="en">Study a fiqh issue</span></span>
+      <span class="chip"><span class="ar">مقارنة المذاهب</span><span class="en">Compare the schools</span></span>
+      <span class="chip"><span class="ar">تخريج حديث</span><span class="en">Trace a hadith</span></span>
+      <span class="chip"><span class="ar">مقارنة تفاسير آية</span><span class="en">Compare tafsirs of a verse</span></span>
+      <span class="chip"><span class="ar">دراسة نازلة معاصرة</span><span class="en">Study a contemporary issue</span></span>
+      <span class="chip"><span class="ar">إعداد خطة بحث</span><span class="en">Draft a research plan</span></span>
+      <span class="chip"><span class="ar">دليل الاستخدام</span><span class="en">Usage guide</span></span>
+    </div>
+    <p class="hint"><span class="ar">تجدها من زر <b>«+»</b> في مربع الكتابة بتطبيق كلود (زر إرفاق الملفات نفسه)، أو بكتابة <b>«/»</b> في مربع فارغ.</span>
+      <span class="en">Find them via the <b>“+”</b> button in Claude's message box (the same attach-files button), or by typing <b>“/”</b> in an empty box.</span></p>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ar">خطوة بخطوة</span><span class="en">Step by step</span></div>
+    <h2><span class="ar">طريقة التثبيت</span><span class="en">Installation</span></h2>
+    <div class="steps">
+      <div class="step"><div class="st"><span class="ar">تأكَّد من المتطلبات: تطبيق <b class="lat">Claude Desktop</b> على جهازك، وتطبيق المكتبة الشاملة ٤ وفيه كتب منزَّلة.</span>
+        <span class="en">Make sure you have the requirements: the <b class="lat">Claude Desktop</b> app, and the Shamela 4 app with books downloaded.</span></div></div>
+      <div class="step"><div class="st"><span class="ar">نزّل ملف الإضافة (بامتداد <b class="lat">.mcpb</b>) من <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">صفحة الإصدار</a> (أو زر «تنزيل» بالأعلى).</span>
+        <span class="en">Download the extension file (<b class="lat">.mcpb</b>) from the <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener">release page</a> (or the “Download” button above).</span></div></div>
+      <div class="step"><div class="st"><span class="ar">افتح الملف بنقرة مزدوجة، أو من التطبيق: <b>الإعدادات ← الإضافات ← تثبيت إضافة</b>، ثم اختر الملف.</span>
+        <span class="en">Open the file by double-clicking, or from the app: <b>Settings → Extensions → Install extension</b>, then pick the file.</span></div></div>
+      <div class="step"><div class="st"><span class="ar">تظهر أدوات الشاملة وقوالبها جاهزة في محادثتك. اسأل: «افحص إضافة الشاملة» للتأكد أنها تعمل.</span>
+        <span class="en">Shamela's tools and templates appear in your chat. Ask “check the Shamela extension” to confirm it works.</span></div></div>
+    </div>
+    <div class="callout"><b><span class="ar">التحديث من نسخة سابقة:</span><span class="en">Updating from an earlier version:</span></b>
+      <span class="ar"> احذف النسخة القديمة من إعدادات الإضافات في التطبيق، ثم ثبّت الملف الجديد بالطريقة نفسها. بياناتك ومكتبتك لا تتأثر — الإضافة تقرأ فقط.</span>
+      <span class="en"> remove the old version from the app's extension settings, then install the new file the same way. Your data and library are untouched — the extension only reads.</span></div>
+  </div>
+</section>
+
+<!-- USAGE -->
+<section id="usage">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ar">كيف تستعملها</span><span class="en">How to use it</span></div>
+    <h2><span class="ar">طريقة الاستخدام</span><span class="en">Usage</span></h2>
+    <p class="lead"><span class="ar">اكتب سؤالك بالعربية طبيعيًّا في محادثة كلود، فيتولَّى هو اختيار الأدوات والبحث في كتبك والعرض بالعزو. وهذه أمثلة تكتبها كما هي:</span>
+      <span class="en">Just type your question naturally in a Claude chat; it chooses the tools, searches your books, and answers with citations. Here are examples you can type as-is:</span></p>
+    <div class="exs">
+      <div class="ex"><span class="qm">”</span><span><span class="ar">اجمع أقوال المذاهب في حكم بيع العربون، مع الأدلة والعزو.</span><span class="en">Gather the schools' rulings on down-payment sales, with evidence and citations.</span></span></div>
+      <div class="ex"><span class="qm">”</span><span><span class="ar">خرِّج لي حديث «إنما الأعمال بالنيات» ومواضعه في كتبي.</span><span class="en">Trace the hadith “Actions are by intentions” and where it appears in my books.</span></span></div>
+      <div class="ex"><span class="qm">”</span><span><span class="ar">قارن بين تفاسير آية الكرسي في التفاسير المنزَّلة عندي.</span><span class="en">Compare the tafsirs of Ayat al-Kursi across my installed commentaries.</span></span></div>
+      <div class="ex"><span class="qm">”</span><span><span class="ar">ما مدى انتشار جذر «صبر» في مكتبتي عبر القرون؟</span><span class="en">How widespread is the root “ṣ-b-r” in my library across the centuries?</span></span></div>
+    </div>
+    <p class="hint"><span class="ar">للبحث المنهجي المرتب استعمل <b>القوالب الجاهزة</b> من زر «+»: تملأ حقلًا واحدًا فيرسم لك كلود خطة العمل خطوةً خطوة.</span>
+      <span class="en">For a structured, methodical study use the <b>ready templates</b> from the “+” button: fill one field and Claude lays out the plan step by step.</span></p>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section id="privacy">
+  <div class="wrap">
+    <div class="eyebrow"><span class="ar">الخصوصية والأمانة</span><span class="en">Privacy &amp; integrity</span></div>
+    <h2><span class="ar">بياناتك على جهازك</span><span class="en">Your data stays on your device</span></h2>
+    <p class="lead"><span class="ar">تقرأ الإضافة ملفات المكتبة الشاملة على جهازك قراءةً فقط، ولا تغيّر فيها شيئًا، ومن غير خادمٍ وسيطٍ خاصٍّ بها. أما نصوص المحادثة فتخضع لسياسة تطبيق كلود المعتادة. ومبدأ «دقة النقل» أساسٌ في التصميم: كل نقلٍ معزوّ، ولا يُكمَّل نصٌّ من خارج كتبك.</span>
+      <span class="en">The extension reads your Shamela library files locally, read-only, changing nothing, with no intermediary server of its own. Your conversation text is governed by Claude's usual app policy. “Faithful citation” is a design principle: every quote is cited, and no text is completed from outside your books.</span></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fowner">
+        <span class="ar">صاحب المشروع: <b>حمود الحقباني</b> — محاضر بجامعة الملك عبدالعزيز</span>
+        <span class="en">Project owner: <b>Hamoud Al-Hoqbani</b> — lecturer at King Abdulaziz University</span>
+      </div>
+      <div class="flinks">
+        <a href="https://github.com/alhoqbani/shamela-mcp" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener"><span class="ar">الإصدارات</span><span class="en">Releases</span></a>
+        <a href="https://github.com/alhoqbani/shamela-mcp/releases/latest" target="_blank" rel="noopener"><span class="ar">تنزيل</span><span class="en">Download</span></a>
+      </div>
+    </div>
+    <div class="fmeta">
+      <span class="ar">إضافة مجانية مفتوحة المصدر لتطبيق Claude Desktop · الإصدار 1.2.0 · تعمل مع المكتبة الشاملة ٤ على جهازك.</span>
+      <span class="en">A free, open-source extension for Claude Desktop · v1.2.0 · works with the Shamela 4 app on your device.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ---- data: 30 tools in 7 categories (bilingual) ----
+  var CATS=[
+    {ar:{nm:"البحث",ds:"عام · بالعناوين · بالكتب · بالمؤلفين · القرآن"},en:{nm:"Search",ds:"pages · titles · books · authors · Qur'an"},
+     old:{ar:["بحث عام في الصفحات","في عناوين الأبواب","في فهرس الكتب","في المؤلفين","في القرآن الكريم"],en:["general page search","chapter titles","book catalog","authors","the Qur'an"]},
+     neu:{ar:["بالعبارة الكاملة والتقارب","مطابق دقيق (تشكيل/همزات/أرقام)","منطقي (و/أو/دون)"],en:["exact phrase & proximity","exact match (diacritics/hamza/digits)","boolean (AND/OR/NOT)"]}},
+    {ar:{nm:"القرآن والتفسير",ds:"الآيات · جلب الآية · التفسير"},en:{nm:"Qur'an & Tafsir",ds:"verse search · fetch verse · tafsir"},
+     old:{ar:["البحث في الآيات","جلب آية بالرسوم","الكتب المفسِّرة لآية"],en:["verse search","fetch a verse","books that explain a verse"]},
+     neu:{ar:["تغطية تفاسيرك المنزَّلة لآية","جلب التفسير من عدة مصادر بالعزو"],en:["your tafsir coverage per verse","multi-source tafsir with citation"]}},
+    {ar:{nm:"الحديث",ds:"كتب الرواية · إشارات الصفحة"},en:{nm:"Hadith",ds:"narration books · page signals"},
+     old:{ar:["كتب رواية حديث بالرقم","إشارات الصفحة: آيات وأحاديث وأسانيد"],en:["narrating books by id","page signals: verses, hadith, chains"]},
+     neu:{ar:["البحث عن حديث بنصه مع التخريج"],en:["find a hadith by its text, with takhrij"]}},
+    {ar:{nm:"القراءة والتصفح",ds:"الصفحات · الفهرس · الأبواب · الأجزاء"},en:{nm:"Reading & browsing",ds:"pages · index · chapters · volumes"},
+     old:{ar:["جلب صفحة كاملة","قراءة نطاق صفحات","فهرس الكتاب","قراءة باب كامل","أجزاء الكتاب"],en:["fetch a full page","read a page range","book table of contents","read a whole chapter","book volumes"]},
+     neu:{ar:[],en:[]}},
+    {ar:{nm:"الفهارس والبيانات",ds:"التصنيفات · المنزَّلة · بيانات الكتاب والمؤلف · العزو"},en:{nm:"Catalog & metadata",ds:"categories · downloaded · book/author data · citation"},
+     old:{ar:["تصنيفات المكتبة","الكتب المنزَّلة","بيانات كتاب","بيانات مؤلف","تحليل اسم إلى كتاب/مؤلف","صياغة الإحالة"],en:["library categories","downloaded books","book details","author details","resolve a name to book/author","format a citation"]},
+     neu:{ar:[],en:[]}},
+    {ar:{nm:"الإحصاء والزمن",ds:"انتشار الجذور · التصفية الزمنية"},en:{nm:"Statistics & time",ds:"root spread · temporal filtering"},
+     old:{ar:[],en:[]},
+     neu:{ar:["انتشار جذر عبر التصنيفات والقرون","الكتب بحسب التأليف أو الوفاة"],en:["root spread across categories & centuries","books by composition or death year"]}},
+    {ar:{nm:"التشخيص والدليل",ds:"فحص الإضافة · الدليل المدمج"},en:{nm:"Health & guide",ds:"self-check · built-in guide"},
+     old:{ar:[],en:[]},
+     neu:{ar:["فحص صحة الإضافة والمكتبة","الدليل المدمج داخل كلود"],en:["extension & library health check","built-in guide inside Claude"]}}
+  ];
+
+  var L={
+    ar:{newAll:"جديد كليًّا",newN:function(n){return "+"+["","١","٢","٣"][n]+" جديد"}},
+    en:{newAll:"all new",newN:function(n){return "+"+n+" new"}}
+  };
+  var box=document.getElementById("cats");
+  function renderCats(){
+    var lang=document.documentElement.getAttribute("data-lang");
+    box.innerHTML="";
+    CATS.forEach(function(c){
+      var t=c[lang], n=c.neu[lang].length, oldN=c.old[lang].length;
+      var badge = n ? '<span class="bd">'+(oldN===0?L[lang].newAll:L[lang].newN(n))+'</span>' : '';
+      var items = c.old[lang].map(function(x){return '<li>'+x+'</li>'})
+                 .concat(c.neu[lang].map(function(x){return '<li class="n">'+x+'</li>'})).join('');
+      var el=document.createElement("div"); el.className="cat";
+      el.innerHTML='<button class="acc" aria-expanded="false"><span class="nm">'+t.nm+'</span><span class="ds">'+t.ds+'</span>'+badge+'<span class="car"></span></button><div class="body"><ul>'+items+'</ul></div>';
+      var acc=el.querySelector(".acc"), body=el.querySelector(".body");
+      acc.addEventListener("click",function(){
+        var open=el.classList.toggle("open");
+        acc.setAttribute("aria-expanded",open);
+        body.style.maxHeight = open ? body.scrollHeight+"px" : "0";
+      });
+      box.appendChild(el);
+    });
+  }
+
+  // ---- language ----
+  function setLang(lang){
+    var root=document.documentElement;
+    root.setAttribute("data-lang",lang);
+    root.setAttribute("lang",lang);
+    root.setAttribute("dir", lang==="ar" ? "rtl" : "ltr");
+    document.getElementById("lang").textContent = lang==="ar" ? "English" : "العربية";
+    try{localStorage.setItem("shamela-lang",lang)}catch(e){}
+    renderCats();
+  }
+  document.getElementById("lang").addEventListener("click",function(){
+    setLang(document.documentElement.getAttribute("data-lang")==="ar" ? "en" : "ar");
+  });
+
+  // ---- theme ----
+  function setTheme(t){
+    document.documentElement.setAttribute("data-theme",t);
+    try{localStorage.setItem("shamela-theme",t)}catch(e){}
+  }
+  document.getElementById("theme").addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    if(!cur){cur = matchMedia("(prefers-color-scheme:dark)").matches ? "dark":"light";}
+    setTheme(cur==="dark" ? "light":"dark");
+  });
+
+  // ---- init ----
+  (function(){
+    var savedLang, savedTheme;
+    try{savedLang=localStorage.getItem("shamela-lang");savedTheme=localStorage.getItem("shamela-theme");}catch(e){}
+    if(savedTheme) document.documentElement.setAttribute("data-theme",savedTheme);
+    setLang(savedLang || "ar");
+  })();
+</script>
+</body>
+</html>
