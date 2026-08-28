@@ -1,5 +1,5 @@
 /**
- * Per-book SQLite reader. LRU cache of up to 50 sql.js Database handles
+ * Per-book SQLite reader. LRU cache of up to 50 open database handles
  * per `docs/architecture.md` §"SQLite cache strategy".
  *
  * Surface:
@@ -16,9 +16,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
-
 import { PER_BOOK_CACHE_LIMIT } from "./constants.js";
+import type { ShamelaDb, SqlDatabase, SqlValue } from "./db.js";
 
 const BOOK_LITERAL = "الكتاب"; // when part == "الكتاب", we treat it as no part
 
@@ -100,8 +99,7 @@ export function resolveBookPath(databaseRoot: string, bookId: number): string | 
 }
 
 export class PageStore {
-    private SQL: SqlJsStatic | null = null;
-    private readonly databases = new Map<number, Database>();
+    private readonly databases = new Map<number, SqlDatabase>();
     /**
      * Bumped by invalidate(). Cached handles hold a byte-image of the file, so a
      * book Shamela re-downloaded mid-session would keep serving the old text
@@ -114,19 +112,8 @@ export class PageStore {
 
     constructor(
         private readonly databaseRoot: string,
-        private readonly wasmBinary: Uint8Array,
+        private readonly db: ShamelaDb,
     ) {}
-
-    private async ensureInit(): Promise<SqlJsStatic> {
-        if (this.SQL) return this.SQL;
-        const buf = this.wasmBinary;
-        const ab: ArrayBuffer =
-            buf.byteOffset === 0 && buf.byteLength === buf.buffer.byteLength
-                ? (buf.buffer as ArrayBuffer)
-                : (buf.slice().buffer as ArrayBuffer);
-        this.SQL = await initSqlJs({ wasmBinary: ab });
-        return this.SQL;
-    }
 
     /**
      * Resolve the on-disk path of a per-book SQLite file, or null when the
@@ -155,7 +142,7 @@ export class PageStore {
         this.generation++;
     }
 
-    private async getDb(bookId: number): Promise<Database | null> {
+    private async getDb(bookId: number): Promise<SqlDatabase | null> {
         const cached = this.databases.get(bookId);
         if (cached) {
             if ((this.handleGeneration.get(bookId) ?? 0) === this.generation) {
@@ -174,13 +161,16 @@ export class PageStore {
         }
         const p = this.bookPath(bookId);
         if (p === null) return null;
-        const SQL = await this.ensureInit();
-        let db: Database;
+        let db: SqlDatabase | null;
         try {
-            db = new SQL.Database(new Uint8Array(fs.readFileSync(p)));
+            db = await this.db.open(p);
         } catch {
+            // A book file that exists but cannot be read is a broken download,
+            // not a reason to fail the request: report the book as unreadable
+            // exactly as if it were absent.
             return null;
         }
+        if (!db) return null;
         this.databases.set(bookId, db);
         this.handleGeneration.set(bookId, this.generation);
         if (this.databases.size > PER_BOOK_CACHE_LIMIT) {
@@ -566,7 +556,7 @@ export class PageStore {
     }
 }
 
-function rowToPage(r: ReturnType<ReturnType<Database["prepare"]>["get"]>): PageRow {
+function rowToPage(r: SqlValue[]): PageRow {
     const id = r[0] as number;
     const part = typeof r[1] === "string" && r[1].trim() ? r[1].trim() : null;
     const page = typeof r[2] === "number" ? r[2] : null;
@@ -581,7 +571,7 @@ function rowToPage(r: ReturnType<ReturnType<Database["prepare"]>["get"]>): PageR
     };
 }
 
-function collectToc(db: Database, parentId: number, depth: number): TocEntry[] {
+function collectToc(db: SqlDatabase, parentId: number, depth: number): TocEntry[] {
     const stmt = db.prepare("SELECT id, page, parent FROM title WHERE parent = ? ORDER BY id");
     const direct: TocEntry[] = [];
     try {

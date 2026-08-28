@@ -29,7 +29,7 @@ import {
     createSyntheticLibrary,
     type SyntheticLibrary,
 } from "../fixtures/synthetic-library.js";
-import { getSqlWasm } from "../fixtures/shared.js";
+import { getDb, getSqlWasm } from "../fixtures/shared.js";
 
 let lib: SyntheticLibrary;
 let catalog: Catalog;
@@ -47,10 +47,10 @@ async function tablesOf(file: string): Promise<string[]> {
 
 beforeAll(async () => {
     lib = await createSyntheticLibrary();
-    catalog = await Catalog.load(path.join(lib.database, "master.db"), getSqlWasm(), {
+    catalog = await Catalog.load(path.join(lib.database, "master.db"), getDb(), {
         databaseRoot: lib.database,
     });
-    pages = new PageStore(lib.database, getSqlWasm());
+    pages = new PageStore(lib.database, getDb());
 }, 60_000);
 
 afterAll(() => lib?.cleanup());

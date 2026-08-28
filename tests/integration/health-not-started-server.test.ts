@@ -22,29 +22,29 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
-import initSqlJs from "sql.js";
-
+import { createPartialBackend } from "../../src/server/backend.js";
 import { createServer } from "../../src/server/index.js";
 import { engineTooOld } from "../../src/server/errors.js";
-import { getSqlWasm } from "../fixtures/shared.js";
+import { resolveAll } from "../../src/server/paths.js";
+import { getDb } from "../fixtures/shared.js";
 
 let client: Client;
 
 beforeAll(async () => {
-    // Initialise sql.js with the REAL wasm before anything else in this file.
-    //
-    // createPartialBackend tries to open the catalogue, and under vitest the
-    // `.wasm` import is stubbed with an empty buffer (see vitest.config.ts).
-    // sql.js aborts on that and stays aborted for the whole process, so this
-    // file would break every suite that ran after it — and would itself pass
-    // only because some earlier suite had already initialised sql.js properly.
-    // A test that passes because of what ran before it is not a test.
-    await initSqlJs({ wasmBinary: getSqlWasm().buffer as ArrayBuffer });
-
-    // The failure a user with an un-upgraded Shamela actually hits.
-    const server = createServer(async () => {
-        throw engineTooOld("C:/shamela4");
-    });
+    // The failure a user with an un-upgraded Shamela actually hits: the backend
+    // will not build, and the health tool falls back to the partial one — the
+    // real partial one, reading this machine's own install through sql.js,
+    // because a stub here would test the fallback wiring against nothing.
+    const server = createServer(
+        async () => {
+            throw engineTooOld("C:/shamela4");
+        },
+        (startupError) =>
+            createPartialBackend(
+                { resolvePaths: resolveAll, db: getDb(), createHelper: () => { throw startupError; } },
+                startupError,
+            ),
+    );
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     client = new Client({ name: "health-not-started-test", version: "1.0.0" });
     await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);

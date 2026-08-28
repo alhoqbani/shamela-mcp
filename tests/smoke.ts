@@ -25,10 +25,11 @@ import * as path from "node:path";
 const require = createRequire(import.meta.url);
 
 import { Catalog } from "../src/server/catalog.js";
-import { Helper } from "../src/server/helper.js";
+import { JavaHelper } from "../src/server/helper.js";
 import { PageStore } from "../src/server/pages.js";
 import { resolveAll, ShamelaNotFoundError } from "../src/server/paths.js";
 import { ServiceStore } from "../src/server/services.js";
+import { createSqlJsDb } from "../src/server/sqljs.js";
 
 import { getAuthorInput, runGetAuthor } from "../src/server/tools/getAuthor.js";
 import { getAyaInput, runGetAya } from "../src/server/tools/getAya.js";
@@ -86,10 +87,11 @@ async function main(): Promise<number> {
     const sqlWasmPath = require.resolve("sql.js/dist/sql-wasm.wasm");
     const sqlWasm = new Uint8Array(fs.readFileSync(sqlWasmPath));
 
-    const helper = new Helper({ paths });
-    const catalog = await Catalog.load(path.join(paths.database, "master.db"), sqlWasm, { databaseRoot: paths.database });
-    const pages = new PageStore(paths.database, sqlWasm);
-    const services = new ServiceStore(paths.database, sqlWasm);
+    const db = createSqlJsDb(sqlWasm);
+    const helper = new JavaHelper({ paths });
+    const catalog = await Catalog.load(path.join(paths.database, "master.db"), db, { databaseRoot: paths.database });
+    const pages = new PageStore(paths.database, db);
+    const services = new ServiceStore(paths.database, db);
 
     console.log(
         `catalog: ${catalog.bookCount()} books, ${catalog.authorCount()} authors, ${catalog.categoryCount()} categories`,

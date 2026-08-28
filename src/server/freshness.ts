@@ -20,6 +20,7 @@
 import * as fs from "node:fs";
 
 import { Catalog } from "./catalog.js";
+import type { ShamelaDb } from "./db.js";
 import { DiskIndex } from "./diskIndex.js";
 
 export interface FreshnessStats {
@@ -58,7 +59,7 @@ function sameFingerprint(a: Fingerprint | null, b: Fingerprint | null): boolean 
 export class CatalogFreshness {
     private readonly masterDbPath: string;
     private readonly databaseRoot: string;
-    private readonly wasmBinary: Uint8Array;
+    private readonly db: ShamelaDb;
     private readonly now: () => number;
     private readonly checkIntervalMs: number;
     private readonly failBackoffMs: number;
@@ -80,7 +81,7 @@ export class CatalogFreshness {
     constructor(opts: {
         masterDbPath: string;
         databaseRoot: string;
-        wasmBinary: Uint8Array;
+        db: ShamelaDb;
         now?: () => number;
         checkIntervalMs?: number;
         failBackoffMs?: number;
@@ -89,7 +90,7 @@ export class CatalogFreshness {
     }) {
         this.masterDbPath = opts.masterDbPath;
         this.databaseRoot = opts.databaseRoot;
-        this.wasmBinary = opts.wasmBinary;
+        this.db = opts.db;
         this.now = opts.now ?? Date.now;
         this.checkIntervalMs = opts.checkIntervalMs ?? CHECK_INTERVAL_MS;
         this.failBackoffMs = opts.failBackoffMs ?? FAIL_BACKOFF_MS;
@@ -144,7 +145,7 @@ export class CatalogFreshness {
             try {
                 const idx = new DiskIndex(this.databaseRoot);
                 idx.scan();
-                const next = await Catalog.load(this.masterDbPath, this.wasmBinary, {
+                const next = await Catalog.load(this.masterDbPath, this.db, {
                     databaseRoot: this.databaseRoot,
                     diskIndex: idx,
                 });

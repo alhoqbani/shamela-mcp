@@ -20,14 +20,14 @@ import { Catalog } from "../../src/server/catalog.js";
 import type { Helper } from "../../src/server/helper.js";
 import { runResearchScope, researchScopeInput, schoolStatus } from "../../src/server/tools/researchScope.js";
 import { SYN, SYN_CATEGORY, createSyntheticLibrary, type SyntheticLibrary } from "../fixtures/synthetic-library.js";
-import { getSqlWasm } from "../fixtures/shared.js";
+import { getDb } from "../fixtures/shared.js";
 
 let lib: SyntheticLibrary;
 let catalog: Catalog;
 
 beforeAll(async () => {
     lib = await createSyntheticLibrary();
-    catalog = await Catalog.load(path.join(lib.database, "master.db"), getSqlWasm(), {
+    catalog = await Catalog.load(path.join(lib.database, "master.db"), getDb(), {
         databaseRoot: lib.database,
     });
 }, 60_000);

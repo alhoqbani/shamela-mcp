@@ -1,5 +1,14 @@
 /**
- * Manage the long-lived Java helper subprocess.
+ * The search helper: the `Helper` contract the tools are written against, and
+ * `JavaHelper`, the subprocess implementation the extension ships.
+ *
+ * Everything that searches goes through Shamela's own Lucene indexes, which
+ * only Java can read. The tools therefore never do more than send a command
+ * and await a reply, and that — not the subprocess — is what they depend on:
+ * a host that already runs the helper elsewhere (pooled, remote, shared
+ * between sessions) implements `Helper` and keeps every tool unchanged.
+ *
+ * `JavaHelper` manages the long-lived Java subprocess.
  *
  * Spawns `java -cp <classpath> ws.shamela.mcp.Main`, talks to it via newline-
  * delimited JSON on stdin/stdout. Tracks in-flight requests by id; routes
@@ -49,7 +58,32 @@ export class HelperError extends Error {
     }
 }
 
-export class Helper extends EventEmitter {
+/**
+ * What the tool layer needs from the search engine. `JavaHelper` implements
+ * it by spawning Java; a host may implement it any other way.
+ */
+export interface Helper {
+    /** Send a command and await its reply. Rejects with `HelperError`. */
+    request<T = unknown>(cmd: string, args?: unknown, timeoutMs?: number): Promise<T>;
+    /** Round-trip check that also reports the engine's own numbers. */
+    ping(timeoutMs?: number): Promise<HelperInfo>;
+    /** Wait until the helper is answering. */
+    ready(timeoutMs?: number): Promise<HelperInfo>;
+    /** Release whatever the helper holds. */
+    close(): Promise<void> | void;
+}
+
+/** What a helper says about itself when pinged. */
+export interface HelperInfo {
+    pong: true;
+    java_version: string;
+    /** Documents in Shamela's Lucene indexes; absent on older helper builds. */
+    page_docs?: number;
+    book_docs?: number;
+    author_docs?: number;
+}
+
+export class JavaHelper extends EventEmitter implements Helper {
     private readonly config: HelperConfig;
     private child: ChildProcessWithoutNullStreams | null = null;
     private buffer = "";
@@ -266,26 +300,12 @@ export class Helper extends EventEmitter {
     }
 
     /** Ping the helper; resolves with the helper's metadata. */
-    ping(timeoutMs = 10_000): Promise<{
-        pong: true;
-        java_version: string;
-        /** Documents in Shamela's Lucene indexes; absent on older helper builds. */
-        page_docs?: number;
-        book_docs?: number;
-        author_docs?: number;
-    }> {
-        return this.request<{ pong: true; java_version: string }>("ping", {}, timeoutMs);
+    ping(timeoutMs = 10_000): Promise<HelperInfo> {
+        return this.request<HelperInfo>("ping", {}, timeoutMs);
     }
 
     /** Wait until the helper has answered a ping. */
-    async ready(timeoutMs = 15_000): Promise<{
-        pong: true;
-        java_version: string;
-        /** Documents in Shamela's Lucene indexes; absent on older helper builds. */
-        page_docs?: number;
-        book_docs?: number;
-        author_docs?: number;
-    }> {
+    async ready(timeoutMs = 15_000): Promise<HelperInfo> {
         return this.ping(timeoutMs);
     }
 

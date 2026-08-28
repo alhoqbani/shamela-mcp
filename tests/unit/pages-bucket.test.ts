@@ -24,7 +24,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import initSqlJs from "sql.js";
 
 import { PageStore } from "../../src/server/pages.js";
-import { getSqlWasm } from "../fixtures/shared.js";
+import { getDb, getSqlWasm } from "../fixtures/shared.js";
 
 /** Books covering the three on-disk layouts. */
 const PADDED_ID = 9; // bucket 9  → modern layout  book/009/9.db
@@ -80,7 +80,7 @@ beforeAll(async () => {
     await writeBookDb(path.join(tempRoot, "book", "100"), BUCKET100_ID, 14, 4);
     // 999: the highest bucket — still one spelling only.
     await writeBookDb(path.join(tempRoot, "book", "999"), BUCKET999_ID, 15, 5);
-    pages = new PageStore(tempRoot, getSqlWasm());
+    pages = new PageStore(tempRoot, getDb());
 });
 
 afterAll(() => {

@@ -1,0 +1,26 @@
+/*
+ * The library build.
+ *
+ * `npm run build:server` bundles the extension into one file with esbuild;
+ * that output is a program, not a package — it inlines a `.wasm`, it has no
+ * type declarations, and nothing can import a piece of it. A consumer that
+ * pins this repository needs the opposite: plain ESM plus `.d.ts`, one file
+ * per module, no bundler assumptions.
+ *
+ * So there are two outputs from one source tree: `dist/index.js` (esbuild, for
+ * the `.mcpb`) and `dist/lib/` (tsc, for `import ... from "shamela-mcp"`).
+ * `src/server/entry.ts` is excluded from this one — it is the extension's own
+ * program, and it carries the `.wasm` import only esbuild can resolve.
+ */
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": false,
+        "declaration": true,
+        "outDir": "dist/lib",
+        "rootDir": "src",
+        "removeComments": false
+    },
+    "include": ["src/server/**/*.ts"],
+    "exclude": ["src/server/entry.ts", "node_modules", "dist", "helper", "src/java", "tests"]
+}

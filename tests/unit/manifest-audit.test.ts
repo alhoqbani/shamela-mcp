@@ -28,7 +28,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "manifest.json")
 
 /** Tool names the server registers, read from the source rather than run. */
 function registeredToolNames(): string[] {
-    const src = fs.readFileSync(path.join(repoRoot, "src", "server", "index.ts"), "utf8");
+    const src = fs.readFileSync(path.join(repoRoot, "src", "server", "register.ts"), "utf8");
     return [...src.matchAll(/server\.registerTool\(\s*\n?\s*"(shamela_[a-z_]+)"/g)].map((m) => m[1]!);
 }
 

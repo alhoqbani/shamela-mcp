@@ -1,5 +1,5 @@
 /**
- * Read-only sql.js wrappers for service/{tafseer,hadeeth,trajim}.db.
+ * Read-only wrappers for service/{tafseer,hadeeth,trajim}.db.
  * Per `docs/catalog-survey.md` §7.
  *
  * Each service DB has the schema:
@@ -11,10 +11,9 @@
  * we don't expose the user-exclusion toggle.
  */
 
-import * as fs from "node:fs";
 import * as path from "node:path";
 
-import initSqlJs, { type Database, type SqlJsStatic } from "sql.js";
+import type { ShamelaDb, SqlDatabase } from "./db.js";
 
 export type ServiceName = "tafseer" | "hadeeth" | "trajim";
 
@@ -24,8 +23,7 @@ export interface ServiceHit {
 }
 
 export class ServiceStore {
-    private SQL: SqlJsStatic | null = null;
-    private readonly databases = new Map<ServiceName, Database>();
+    private readonly databases = new Map<ServiceName, SqlDatabase>();
     /**
      * Service handles are held for the process lifetime with no eviction, so a
      * download that rewrites e.g. tafseer.db would otherwise be invisible for
@@ -37,19 +35,8 @@ export class ServiceStore {
 
     constructor(
         private readonly databaseRoot: string,
-        private readonly wasmBinary: Uint8Array,
+        private readonly db: ShamelaDb,
     ) {}
-
-    private async ensureInit(): Promise<SqlJsStatic> {
-        if (this.SQL) return this.SQL;
-        const buf = this.wasmBinary;
-        const ab: ArrayBuffer =
-            buf.byteOffset === 0 && buf.byteLength === buf.buffer.byteLength
-                ? (buf.buffer as ArrayBuffer)
-                : (buf.slice().buffer as ArrayBuffer);
-        this.SQL = await initSqlJs({ wasmBinary: ab });
-        return this.SQL;
-    }
 
     private servicePath(name: ServiceName): string {
         return path.join(this.databaseRoot, "service", `${name}.db`);
@@ -60,7 +47,7 @@ export class ServiceStore {
         this.generation++;
     }
 
-    private async getDb(name: ServiceName): Promise<Database | null> {
+    private async getDb(name: ServiceName): Promise<SqlDatabase | null> {
         const cached = this.databases.get(name);
         if (cached) {
             if ((this.handleGeneration.get(name) ?? 0) === this.generation) return cached;
@@ -73,14 +60,15 @@ export class ServiceStore {
             }
         }
         const p = this.servicePath(name);
-        if (!fs.existsSync(p)) return null;
-        const SQL = await this.ensureInit();
         try {
-            const db = new SQL.Database(new Uint8Array(fs.readFileSync(p)));
+            const db = await this.db.open(p);
+            if (!db) return null;
             this.databases.set(name, db);
             this.handleGeneration.set(name, this.generation);
             return db;
         } catch {
+            // An unreadable service index is the same as a missing one here:
+            // the caller loses that lookup, not the whole request.
             return null;
         }
     }

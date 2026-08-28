@@ -19,7 +19,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { Catalog } from "../../src/server/catalog.js";
 import { CatalogFreshness } from "../../src/server/freshness.js";
-import { getSqlWasm } from "../fixtures/shared.js";
+import { getDb, getSqlWasm } from "../fixtures/shared.js";
 
 let root: string;
 let masterDb: string;
@@ -65,7 +65,7 @@ function makeFreshness(): CatalogFreshness {
     return new CatalogFreshness({
         masterDbPath: masterDb,
         databaseRoot: root,
-        wasmBinary: getSqlWasm(),
+        db: getDb(),
         now: () => clock,
         checkIntervalMs: 2_000,
         failBackoffMs: 30_000,
@@ -90,7 +90,7 @@ describe("catalog freshness", () => {
     it("returns the same catalog instance when nothing changed", async () => {
         await writeLibrary([{ id: 10, name: "كتاب" }]);
         writeBookFile(10);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
 
         const freshness = makeFreshness();
         clock += 10_000;
@@ -101,7 +101,7 @@ describe("catalog freshness", () => {
     it("does not touch the disk again inside the check interval", async () => {
         await writeLibrary([{ id: 10, name: "كتاب" }]);
         writeBookFile(10);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
         const freshness = makeFreshness();
 
         clock += 10_000;
@@ -117,7 +117,7 @@ describe("catalog freshness", () => {
     it("reloads when a book is added, and marks it as not yet searchable", async () => {
         await writeLibrary([{ id: 10, name: "الأول" }]);
         writeBookFile(10);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
         expect(catalog.downloadedBookIds().size).toBe(1);
 
         const freshness = makeFreshness();
@@ -144,7 +144,7 @@ describe("catalog freshness", () => {
     it("keeps the previous catalog when the reload fails", async () => {
         await writeLibrary([{ id: 10, name: "كتاب" }]);
         writeBookFile(10);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
         const freshness = makeFreshness();
 
         // Shamela is mid-write: the file is there but unreadable as a database.
@@ -163,7 +163,7 @@ describe("catalog freshness", () => {
     it("backs off instead of retrying a broken file on every call", async () => {
         await writeLibrary([{ id: 10, name: "كتاب" }]);
         writeBookFile(10);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
         const freshness = makeFreshness();
 
         fs.writeFileSync(masterDb, "torn garbage");
@@ -179,7 +179,7 @@ describe("catalog freshness", () => {
     it("checks immediately when forced", async () => {
         await writeLibrary([{ id: 10, name: "كتاب" }]);
         writeBookFile(10);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
         const freshness = makeFreshness();
 
         await freshness.ensureFresh(catalog);
@@ -194,7 +194,7 @@ describe("catalog treats the file as the authority", () => {
         // The reported library: copied in, so every flag is 0.
         await writeLibrary([{ id: 31, name: "منسوخ", flagged: false }]);
         writeBookFile(31);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
 
         expect(catalog.isDownloaded(31)).toBe(true);
         expect(catalog.isFlaggedOnDisk(31)).toBe(false);
@@ -207,7 +207,7 @@ describe("catalog treats the file as the authority", () => {
             { id: 44, name: "مبتور" }, // flagged, but its file never arrived
         ]);
         writeBookFile(10); // so the library is readable, just missing this one
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
 
         expect(catalog.isDownloaded(44)).toBe(false);
         expect(catalog.isFlaggedOnDisk(44)).toBe(true);
@@ -218,7 +218,7 @@ describe("catalog treats the file as the authority", () => {
         await writeLibrary([{ id: 10, name: "كتاب" }]);
         writeBookFile(10);
         writeBookFile(88_888); // a file with no catalog row
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
 
         // Listing it would produce a nameless, authorless entry.
         expect(catalog.isDownloaded(88_888)).toBe(false);
@@ -229,7 +229,7 @@ describe("catalog treats the file as the authority", () => {
         // Wrong path, permissions, a disconnected drive — the library has not
         // vanished, and saying it has would be worse than the flag's staleness.
         await writeLibrary([{ id: 10, name: "كتاب" }]);
-        const catalog = await Catalog.load(masterDb, getSqlWasm(), { databaseRoot: root });
+        const catalog = await Catalog.load(masterDb, getDb(), { databaseRoot: root });
 
         expect(catalog.diskScanFellBack()).toBe(true);
         expect(catalog.isDownloaded(10)).toBe(true);

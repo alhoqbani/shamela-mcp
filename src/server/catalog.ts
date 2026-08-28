@@ -13,18 +13,9 @@
  *                       since a copied or restored library has files but no flags
  */
 
-import * as fs from "node:fs";
-import initSqlJs, { type Database } from "sql.js";
-
 import { UNDATED_BOOK_DATE } from "./constants.js";
+import type { ShamelaDb, SqlDatabase } from "./db.js";
 import { DiskIndex } from "./diskIndex.js";
-
-function toArrayBuffer(view: Uint8Array): ArrayBuffer {
-    if (view.byteOffset === 0 && view.byteLength === view.buffer.byteLength) {
-        return view.buffer as ArrayBuffer;
-    }
-    return view.slice().buffer as ArrayBuffer;
-}
 
 // --- Records ----------------------------------------------------------------
 
@@ -137,27 +128,25 @@ export class Catalog {
 
     static async load(
         masterDbPath: string,
-        wasmBinary: Uint8Array,
+        db: ShamelaDb,
         opts: { databaseRoot: string; diskIndex?: DiskIndex },
     ): Promise<Catalog> {
-        if (!fs.existsSync(masterDbPath)) {
+        const handle = await db.open(masterDbPath);
+        if (!handle) {
             throw new Error(`master.db not found at ${masterDbPath}`);
         }
-        const buffer = fs.readFileSync(masterDbPath);
-        const SQL = await initSqlJs({ wasmBinary: toArrayBuffer(wasmBinary) });
-        const db: Database = new SQL.Database(new Uint8Array(buffer));
         try {
             const cat = new Catalog();
-            cat.loadCategories(db);
-            cat.loadAuthors(db);
-            cat.loadBooks(db);
-            cat.buildAuthorJoins(db);
+            cat.loadCategories(handle);
+            cat.loadAuthors(handle);
+            cat.loadBooks(handle);
+            cat.buildAuthorJoins(handle);
             const idx = opts.diskIndex ?? new DiskIndex(opts.databaseRoot);
             if (!idx.scanned) idx.scan();
             cat.applyDiskIndex(idx);
             return cat;
         } finally {
-            db.close();
+            handle.close();
         }
     }
 
@@ -182,7 +171,7 @@ export class Catalog {
         }
     }
 
-    private loadCategories(db: Database): void {
+    private loadCategories(db: SqlDatabase): void {
         const stmt = db.prepare("SELECT category_id, category_name, category_order FROM category");
         try {
             while (stmt.step()) {
@@ -199,7 +188,7 @@ export class Catalog {
         }
     }
 
-    private loadAuthors(db: Database): void {
+    private loadAuthors(db: SqlDatabase): void {
         const stmt = db.prepare(
             "SELECT author_id, author_name, death_number, death_text FROM author",
         );
@@ -224,7 +213,7 @@ export class Catalog {
         }
     }
 
-    private loadBooks(db: Database): void {
+    private loadBooks(db: SqlDatabase): void {
         const stmt = db.prepare(
             `SELECT book_id, book_name, book_category, book_type, book_date, authors,
                     main_author, printed, group_id, hidden, major_online, minor_online,
@@ -279,7 +268,7 @@ export class Catalog {
         }
     }
 
-    private buildAuthorJoins(db: Database): void {
+    private buildAuthorJoins(db: SqlDatabase): void {
         for (const table of ["author_book", "coauthor_book"]) {
             const stmt = db.prepare(`SELECT author_id, book_id FROM ${table}`);
             try {

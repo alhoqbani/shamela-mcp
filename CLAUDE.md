@@ -9,6 +9,7 @@ All scripts are Node-based (no PowerShell) so they run on Windows + macOS + Linu
 ```bash
 npm install                 # one time per checkout
 npm run build               # esbuild Node + javac Java helper
+npm run build:lib           # tsc → dist/lib (the importable library; also runs on npm install)
 npm run test                # unit + integration suite (vitest)
 npm run smoke               # exercise every tool against the local Shamela install
 npm run benchmark           # Mode 1 + Mode 2 workflow simulations
@@ -219,6 +220,40 @@ For Windows users, the Shamela install location is user-chosen at install time. 
 
 Accepts either an install root (with `database/` and `app/` siblings) or a `database/` folder directly. Throws `SHAMELA_NOT_FOUND` listing every path checked on failure.
 
+## The library boundary (`registerAllTools`)
+
+This repo is both a `.mcpb` extension and a library that `shamela-mcp-server`
+pins as a git dependency. One tool surface serves both, so keep the split
+intact:
+
+| File | Role |
+| --- | --- |
+| `src/server/db.ts` | `ShamelaDb` — the only way any code here opens SQLite. |
+| `src/server/sqljs.ts` | The sql.js implementation. Takes the wasm bytes; never decides where they came from. |
+| `src/server/backend.ts` | `ShamelaDeps` (paths + db + helper) → `BackendProvider`. Everything host-specific is in that one interface. |
+| `src/server/register.ts` | `registerAllTools(server, deps)` — the public API. The 34 `registerTool` calls live here. |
+| `src/server/index.ts` | The library's export surface. Re-exports only; no logic. |
+| `src/server/entry.ts` | The extension: the `.wasm` import, sql.js, `JavaHelper`, stdio, `main()`. esbuild's entry point. |
+
+Rules that keep it working:
+
+- **No `sql.js` import outside `sqljs.ts`, and no `.wasm` import outside
+  `entry.ts`.** A consumer with a native SQLite driver must never load either.
+- **Tools depend on the `Helper` interface, not on `JavaHelper`.** A host may
+  run the search engine somewhere else entirely.
+- **`registerAllTools` is the API other repos use.** `createServer(getBackend)`
+  stays for tests and for hosts that already own a `Backend`.
+- **`tests/integration/library-boundary.test.ts` is the contract test.** It
+  registers all 34 tools with a stub db and a stub helper — no install, no
+  wasm, no JVM. If it needs a real anything, the boundary has leaked.
+- **Two builds, one source tree:** `dist/index.js` (esbuild, for the `.mcpb`)
+  and `dist/lib/` (tsc via `tsconfig.lib.json`, for `import`). `prepare` runs
+  the second so a git install builds it in the consumer.
+- **`zod` and `@modelcontextprotocol/sdk` are peer dependencies, and zod stays
+  on 3.** Zod 4 makes the SDK emit input schemas without
+  `additionalProperties: false` — a wire change on all 34 tools. See
+  [docs/decisions.md](docs/decisions.md) §١٣ before touching either version.
+
 ## Testing rules (NEVER violate)
 
 1. **No code without tests.** Every new function, tool, or module ships with at least one test in the same commit. PRs without tests are incomplete.
@@ -280,4 +315,11 @@ npm run smoke               # the legacy fast smoke check (stays for now)
   files, `tests/integration/fixture-shape.test.ts` checks the real ones, so a
   schema change in Shamela fails on a maintainer's machine before the fixture
   can start lying to CI.
-- **The `.wasm` stub:** `vitest.config.ts` ships an inline plugin that returns an empty `Uint8Array` for any `.wasm` import. This shields tests from the esbuild-only `import sqlWasm from "sql.js/dist/sql-wasm.wasm"` in `src/server/index.ts`. Tests load the real wasm via `fs.readFileSync` in the shared fixture. Don't remove the plugin without understanding both code paths.
+- **The `.wasm` import lives in `src/server/entry.ts` and nowhere else.** It is
+  the extension's own entry point, and the only module esbuild's
+  `--loader:.wasm=binary` has to resolve. Shared code takes a `ShamelaDb`
+  (`src/server/db.ts`) instead of calling sql.js, so tests build the sql.js
+  implementation from a wasm read off disk (`getDb()` in
+  `tests/fixtures/shared.ts`) and vitest needs no `.wasm` stub plugin. If you
+  ever move that import back into shared code, you re-break every consumer that
+  is not esbuild — including the test runner.

@@ -31,10 +31,11 @@ import * as path from "node:path";
 const require = createRequire(import.meta.url);
 
 import { Catalog } from "../src/server/catalog.js";
-import { Helper } from "../src/server/helper.js";
+import { JavaHelper, type Helper } from "../src/server/helper.js";
 import { PageStore } from "../src/server/pages.js";
 import { resolveAll } from "../src/server/paths.js";
 import { ServiceStore } from "../src/server/services.js";
+import { createSqlJsDb } from "../src/server/sqljs.js";
 
 import { runGetCitation, getCitationInput } from "../src/server/tools/getCitation.js";
 import { runGetPage, getPageInput } from "../src/server/tools/getPage.js";
@@ -203,10 +204,11 @@ async function main(): Promise<number> {
     }
     const sqlWasm = new Uint8Array(fs.readFileSync(require.resolve("sql.js/dist/sql-wasm.wasm")));
 
-    const helper = new Helper({ paths });
-    const catalog = await Catalog.load(path.join(paths.database, "master.db"), sqlWasm, { databaseRoot: paths.database });
-    const pages = new PageStore(paths.database, sqlWasm);
-    const services = new ServiceStore(paths.database, sqlWasm);
+    const db = createSqlJsDb(sqlWasm);
+    const helper = new JavaHelper({ paths });
+    const catalog = await Catalog.load(path.join(paths.database, "master.db"), db, { databaseRoot: paths.database });
+    const pages = new PageStore(paths.database, db);
+    const services = new ServiceStore(paths.database, db);
 
     console.log("=".repeat(72));
     console.log("shamela-mcp workflow benchmark");
