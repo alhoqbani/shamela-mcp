@@ -243,9 +243,11 @@ Rules that keep it working:
   run the search engine somewhere else entirely.
 - **`registerAllTools` is the API other repos use.** `createServer(getBackend)`
   stays for tests and for hosts that already own a `Backend`.
-- **`tests/integration/library-boundary.test.ts` is the contract test.** It
+- **`tests/unit/library-boundary.test.ts` is the contract test.** It
   registers all 34 tools with a stub db and a stub helper — no install, no
-  wasm, no JVM. If it needs a real anything, the boundary has leaked.
+  wasm, no JVM. It is a *unit* test on purpose: CI has none of those, and this
+  is what another repository builds on. If it ever needs a real anything, the
+  boundary has leaked.
 - **Two builds, one source tree:** `dist/index.js` (esbuild, for the `.mcpb`)
   and `dist/lib/` (tsc via `tsconfig.lib.json`, for `import`). `prepare` runs
   the second so a git install builds it in the consumer.

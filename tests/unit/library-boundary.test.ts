@@ -10,8 +10,10 @@
  * is nothing behind them to reach.
  *
  * This is the same shape the remote server uses, so a break here is a break
- * there — and it fails on a maintainer's machine rather than in someone's
- * deployment.
+ * there. And because it stubs everything, it runs as a unit test: CI has no
+ * Shamela install and no JVM, and this is the one contract another repository
+ * builds on — it has to be guarded where every pull request is checked, not
+ * only on a maintainer's machine.
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
