@@ -438,9 +438,24 @@
        footer credit's included. */
     .btn::after,.navlinks a::after{content:"" !important}
   }
+  /* remote-server banner — one quiet strip above the header, pointing at shamela.link */
+  .promo{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;
+    background:var(--surface2);border-bottom:1px solid var(--border);color:var(--muted);
+    text-decoration:none;font-size:13.5px;font-weight:500;padding:7px 18px;text-align:center}
+  .promo:hover{color:var(--ink)}
+  .promo .tag{color:var(--coral-deep);font-weight:700;flex-shrink:0}
+  .promo .tag::after{content:"·";margin-inline-start:8px;color:var(--border)}
+  .promo .url{color:var(--coral-deep);text-decoration:underline;text-decoration-thickness:1px;
+    text-underline-offset:3px;white-space:nowrap}
 </style>
 </head>
 <body>
+
+<a class="promo" href="https://shamela.link" target="_blank" rel="noopener">
+  <span class="tag"><span class="ar">جديد</span><span class="en">New</span><span class="fa">جدید</span><span class="sw">Mpya</span><span class="tr">Yeni</span><span class="ru">Новое</span><span class="zh">新</span><span class="ur">نیا</span><span class="fr">Nouveau</span><span class="bn">নতুন</span><span class="id">Baru</span><span class="ms">Baharu</span></span>
+  <span class="ar">يمكنك الآن الاتصال بالمكتبة الشاملة عن بُعد دون تثبيت تطبيق الشاملة على جهازك.</span><span class="en">You can now connect to Shamela remotely, without a local Shamela app.</span><span class="fa">اکنون می‌توانید بدون نصب برنامهٔ الشامله روی دستگاه، از راه دور به آن متصل شوید.</span><span class="sw">Sasa unaweza kuunganisha na Shamela kwa mbali, bila programu ya Shamela kwenye kifaa chako.</span><span class="tr">Artık eş-Şâmile’ye uzaktan bağlanabilirsiniz; cihazınızda uygulamaya gerek yok.</span><span class="ru">Теперь можно подключиться к «аш-Шамиля» удалённо, без установки приложения.</span><span class="zh">现在无需在本机安装谢米莱应用，即可远程连接。</span><span class="ur">اب آپ اپنے آلے پر شاملہ ایپ کے بغیر المکتبۃ الشاملہ سے دور سے منسلک ہو سکتے ہیں۔</span><span class="fr">Vous pouvez désormais vous connecter à Shamela à distance, sans l’application installée.</span><span class="bn">এখন ডিভাইসে শামিলা অ্যাপ ছাড়াই দূর থেকে শামিলার সাথে সংযোগ করা যায়।</span><span class="id">Kini Anda dapat terhubung ke Syamilah dari jarak jauh, tanpa aplikasi Syamilah di perangkat.</span><span class="ms">Kini anda boleh menyambung ke Syamilah dari jauh, tanpa aplikasi Syamilah pada peranti.</span>
+  <span class="url lat">shamela.link</span>
+</a>
 
 <header>
   <div class="wrap nav">

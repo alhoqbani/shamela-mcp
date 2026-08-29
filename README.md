@@ -1,3 +1,7 @@
+<sub>الآن يمكنك الاتصال بالمكتبة الشاملة عن بُعد، دون تثبيت تطبيق الشاملة على جهازك — [shamela.link](https://shamela.link)</sub>  
+<sub>You can now connect to Shamela remotely, without a local Shamela app — [shamela.link](https://shamela.link)</sub>  
+<sub>صفحة المشروع · project page — [alhoqbani.github.io/shamela-mcp](https://alhoqbani.github.io/shamela-mcp/)</sub>
+
 # بحث ودراسة في المكتبة الشاملة (إضافة لتطبيق كلود)
 
 إصدار **١٫٣٫٠** — أداة بحث ودراسة عميقة لتطبيق كلود تتيح الوصول الكامل إلى **المكتبة الشاملة ٤** المُثبَّتة على جهازك (المكتبة الإسلامية).
